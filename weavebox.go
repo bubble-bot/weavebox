@@ -91,7 +91,8 @@ func (w *Weavebox) Delete(route string, h Handler) {
 
 // Static registers the prefix as a static fileserver for dir
 func (w *Weavebox) Static(prefix string, dir string) {
-	w.router.PathPrefix(prefix).Handler(http.FileServer(http.Dir(dir)))
+	h := http.StripPrefix(prefix, http.FileServer(http.Dir(dir)))
+	w.router.PathPrefix(prefix).Handler(h)
 }
 
 // Subrouter returns a new Weavebox object that acts as a subrouter.
@@ -160,13 +161,13 @@ type Context struct {
 	// https://godoc.org/golang.org/x/net/context
 	Context context.Context
 
-	// Vars carries request url parameters passes in route prefixes
+	// Vars carries request URL parameters that are passed in route prefixes.
 	// ex. /order/{id} => get the id by calling Vars["id"]
 	Vars map[string]string
 }
 
 // JSON is a helper function for writing a JSON encoded representation of v
-// to the ResonseWriter
+// to the ResponseWriter
 func JSON(w http.ResponseWriter, code int, v interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
