@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -39,9 +38,7 @@ func main() {
 
 // this is how a default weavebox Handler looks like
 func greetingHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
-	name := ctx.Vars.Get(":name")
-	greeting := fmt.Sprintf("Hello, %s\nHow are you today?", name)
-	return weavebox.Text(w, http.StatusOK, greeting)
+	return errors.New("dd")
 }
 
 func piggyBankHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {

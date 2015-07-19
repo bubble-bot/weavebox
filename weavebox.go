@@ -4,32 +4,41 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 
-	"github.com/gorilla/handlers"
 	"golang.org/x/net/context"
 )
 
+// Weavebox is a powerfull micro framework for making application in Go.
+// At first place weavebox is used internaly in the company i work. Its
+// not intended to be a successfull distributed framework. But we love
+// opensource and want to share some of our opinions, its up to you for
+// using it or not.
+//
+// Weavebox has some strong opinions about handling HTTPRequests.
+// If those opinions dont fit your need you can use the default Router
+// and http.Handler for your web applications.
+
 var defaultErrHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-	log.Println("using weavebox default errorHandler, did you now you can use a custom one?")
-	log.Fatal(err)
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
+// Weavebox
 type Weavebox struct {
-	router          *router
+	// NotFoundHandler is used when there is no matching route found.
+	// You can set a NotFoundHandler for each subrouter.
 	NotFoundHandler http.Handler
+	router          *router
 	output          io.Writer
 }
 
 // New returns a new weavebox object
 func New() *Weavebox {
 	return &Weavebox{
-		router: &router{
-			PatternServeMux: NewPatServeMux()},
+		router: &router{Router: NewRouter()},
 	}
 }
 
@@ -42,21 +51,21 @@ func (w *Weavebox) init() http.Handler {
 		w.output = os.Stdout
 	}
 
-	return handlers.LoggingHandler(w.output, w.router)
+	return w.router
 }
 
 // Serve serves the application on the given port
 func (w *Weavebox) Serve(port int) error {
 	h := w.init()
-	log.Printf("listening on 0.0.0.0:%d", port)
+	fmt.Fprintf(w.output, "app listening on 0.0.0.0:%d\n", port)
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), h)
 }
 
-// ServeTLS server the application with TLS encription on the given port
+// ServeTLS serves the application with TLS encription on the given port
 func (w *Weavebox) ServeTLS(port int, certFile, keyFile string) error {
 	h := w.init()
 	portStr := fmt.Sprintf(":%d", port)
-	log.Printf("listening TLS on 0.0.0.0:%d", port)
+	fmt.Fprintf(w.output, "listening TLS on 0.0.0.0:%d\n", port)
 	return http.ListenAndServeTLS(portStr, certFile, keyFile, h)
 }
 
@@ -104,17 +113,17 @@ func (w *Weavebox) Static(prefix string, dir string) {
 func (w *Weavebox) Subrouter(prefix string) *Weavebox {
 	return &Weavebox{
 		router: &router{
-			PatternServeMux: w.router.PatternServeMux,
-			handlers:        w.router.handlers,
-			prefix:          prefix,
-			errorHandler:    w.router.errorHandler,
+			Router:       w.router.Router,
+			handlers:     w.router.handlers,
+			prefix:       prefix,
+			errorHandler: w.router.errorHandler,
 		},
 	}
 }
 
 // SetOutput will write a default appache log the given writer
-func (weav *Weavebox) SetOutput(w io.Writer) {
-	weav.output = w
+func (w *Weavebox) SetOutput(writer io.Writer) {
+	w.output = writer
 }
 
 // SetErrorHandler will register a errHandleFunc to the router and will
@@ -138,29 +147,29 @@ func (w *Weavebox) Register(h Handler) {
 }
 
 type router struct {
-	*PatternServeMux
+	*Router
 	prefix       string
 	handlers     []Handler
 	errorHandler errHandlerFunc
 }
 
 func (r *router) add(method, route string, h Handler) {
-	r.Add(method, path.Join(r.prefix, route), r.makeHttpHandler(h))
+	r.Add(method, path.Join(r.prefix, route), r.makeHTTPHandler(h))
 }
 
 type errHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
 
-func (router *router) makeHttpHandler(h Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := &Context{context.Background(), r.URL.Query()}
-		for _, handler := range router.handlers {
-			if err := handler(ctx, w, r); err != nil {
-				router.errorHandler(w, r, err)
+func (r *router) makeHTTPHandler(h Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := &Context{context.Background(), req.URL.Query()}
+		for _, handler := range r.handlers {
+			if err := handler(ctx, w, req); err != nil {
+				r.errorHandler(w, req, err)
 				return
 			}
 		}
-		if err := h(ctx, w, r); err != nil {
-			router.errorHandler(w, r, err)
+		if err := h(ctx, w, req); err != nil {
+			r.errorHandler(w, req, err)
 			return
 		}
 	}
