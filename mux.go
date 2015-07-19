@@ -1,5 +1,4 @@
-// Package pat implements a simple URL pattern muxer
-package pat
+package weavebox
 
 import (
 	"net/http"
@@ -90,12 +89,15 @@ import (
 // match a pattern for a method other than the method requested and set the
 // Status to "405 Method Not Allowed".
 type PatternServeMux struct {
+	// NotFoundHandler is a fallback handler when no route is matched
+	NotFoundHandler http.Handler
+
 	handlers map[string][]*patHandler
 }
 
-// New returns a new PatternServeMux.
-func New() *PatternServeMux {
-	return &PatternServeMux{make(map[string][]*patHandler)}
+// NewPatServeMux returns a new PatternServeMux.
+func NewPatServeMux() *PatternServeMux {
+	return &PatternServeMux{handlers: make(map[string][]*patHandler)}
 }
 
 // ServeHTTP matches r.URL.Path against its routing table using the rules
@@ -125,6 +127,10 @@ func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(allowed) == 0 {
+		if p.NotFoundHandler != nil {
+			p.NotFoundHandler.ServeHTTP(w, r)
+			return
+		}
 		http.NotFound(w, r)
 		return
 	}

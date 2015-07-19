@@ -18,6 +18,9 @@ func main() {
 	// from our handlers.
 	app.SetErrorHandler(errorHandler)
 
+	// Set a custom notfound handler
+	app.NotFoundHandler = http.HandlerFunc(notFoundHandler)
+
 	// You can setup static routes. This wil serve all files in the root folder
 	// when /public/ route is matched.
 	app.Static("/public/", "./")
@@ -76,4 +79,8 @@ type Bank struct {
 
 func errorHandler(w http.ResponseWriter, r *http.Request, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+
+func notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "YOW, Didnt Found what you looking for!", http.StatusNotFound)
 }

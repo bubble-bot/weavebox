@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/bmizerany/pat"
 	"github.com/gorilla/handlers"
 	"golang.org/x/net/context"
 )
@@ -30,11 +29,12 @@ type Weavebox struct {
 func New() *Weavebox {
 	return &Weavebox{
 		router: &router{
-			PatternServeMux: pat.New()},
+			PatternServeMux: NewPatServeMux()},
 	}
 }
 
 func (w *Weavebox) init() http.Handler {
+	w.router.NotFoundHandler = w.NotFoundHandler
 	if w.router.errorHandler == nil {
 		w.router.errorHandler = defaultErrHandler
 	}
@@ -138,7 +138,7 @@ func (w *Weavebox) Register(h Handler) {
 }
 
 type router struct {
-	*pat.PatternServeMux
+	*PatternServeMux
 	prefix       string
 	handlers     []Handler
 	errorHandler errHandlerFunc

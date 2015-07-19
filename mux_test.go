@@ -1,4 +1,4 @@
-package pat
+package weavebox
 
 import (
 	"net/http"
