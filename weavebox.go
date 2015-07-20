@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path"
+	"time"
 
 	"github.com/httprouter"
 	"golang.org/x/net/context"
@@ -20,20 +22,25 @@ type Weavebox struct {
 	ErrorHandler    ErrorHandlerFunc
 	NotFoundHandler http.Handler
 	Output          io.Writer
+	EnableLog       bool
 	router          *httprouter.Router
 	middleware      []Handler
 	prefix          string
 }
 
 func New() *Weavebox {
-	return &Weavebox{router: httprouter.New()}
+	return &Weavebox{
+		router:    httprouter.New(),
+		Output:    os.Stderr,
+		EnableLog: true,
+	}
 }
 
 func (w *Weavebox) Serve(port int) error {
 	w.init()
 	portStr := fmt.Sprintf(":%d", port)
 	fmt.Fprintf(w.Output, "app listening on 0.0.0.0:%d\n", port)
-	return http.ListenAndServe(portStr, w.router)
+	return http.ListenAndServe(portStr, w)
 }
 
 func (w *Weavebox) Get(route string, h Handler) {
@@ -68,6 +75,18 @@ func (w *Weavebox) Subrouter(prefix string) *Box {
 	return b
 }
 
+func (w *Weavebox) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	if w.EnableLog {
+		start := time.Now()
+		logger := &responseLogger{w: rw}
+		w.router.ServeHTTP(logger, r)
+		w.writeLog(r, start, logger.Status(), logger.Size())
+		// saves a allocation by seperating the whole logger if log is disabled
+	} else {
+		w.router.ServeHTTP(rw, r)
+	}
+}
+
 type Box struct {
 	Weavebox
 }
@@ -83,9 +102,6 @@ func (w *Weavebox) init() {
 	}
 	if w.NotFoundHandler != nil {
 		w.router.NotFound = w.NotFoundHandler
-	}
-	if w.Output == nil {
-		w.Output = os.Stdout
 	}
 }
 
@@ -114,6 +130,20 @@ func (w *Weavebox) makeHTTPRouterHandle(h Handler) httprouter.Handle {
 	}
 }
 
+func (w *Weavebox) writeLog(r *http.Request, start time.Time, status, size int) {
+	host, _, _ := net.SplitHostPort(r.Host)
+	fmt.Fprintf(w.Output, "%s - [%s] %s %s %s %d %d %d\n",
+		host,
+		start.Format("02/Jan/2006:15:04:05 -0700"),
+		r.Method,
+		r.RequestURI,
+		r.Proto,
+		status,
+		size,
+		time.Now().Sub(start),
+	)
+}
+
 type Handler func(ctx *Context, w http.ResponseWriter, r *http.Request) error
 
 type ErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
@@ -134,4 +164,36 @@ func Text(w http.ResponseWriter, code int, text string) error {
 	w.WriteHeader(code)
 	w.Write([]byte(text))
 	return nil
+}
+
+type responseLogger struct {
+	w      http.ResponseWriter
+	status int
+	size   int
+}
+
+func (l *responseLogger) Write(p []byte) (int, error) {
+	if l.status == 0 {
+		l.status = http.StatusOK
+	}
+	size, err := l.w.Write(p)
+	l.size += size
+	return size, err
+}
+
+func (l *responseLogger) Header() http.Header {
+	return l.w.Header()
+}
+
+func (l *responseLogger) WriteHeader(code int) {
+	l.w.WriteHeader(code)
+	l.status = code
+}
+
+func (l *responseLogger) Status() int {
+	return l.status
+}
+
+func (l *responseLogger) Size() int {
+	return l.size
 }

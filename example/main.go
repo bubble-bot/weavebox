@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/twanies/weavebox"
@@ -40,7 +39,6 @@ func cartHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) 
 }
 
 func cartMiddleware(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
-	log.Println("cart middleware")
 	return nil
 }
 
@@ -51,11 +49,9 @@ func testHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) 
 }
 
 func tstMiddleware(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
-	log.Println("tst middleware")
 	return nil
 }
 
 func adminHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
-	log.Println("in admin handler")
 	return nil
 }
