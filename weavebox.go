@@ -5,201 +5,133 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 
+	"github.com/httprouter"
 	"golang.org/x/net/context"
 )
 
-// Weavebox is a powerfull micro framework for making application in Go.
-// At first place weavebox is used internaly in the company i work. Its
-// not intended to be a successfull distributed framework. But we love
-// opensource and want to share some of our opinions, its up to you for
-// using it or not.
-//
-// Weavebox has some strong opinions about handling HTTPRequests.
-// If those opinions dont fit your need you can use the default Router
-// and http.Handler for your web applications.
-
-var defaultErrHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+var defaultErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
-// Weavebox
 type Weavebox struct {
-	// NotFoundHandler is used when there is no matching route found.
-	// You can set a NotFoundHandler for each subrouter.
+	ErrorHandler    ErrorHandlerFunc
 	NotFoundHandler http.Handler
-	router          *router
-	output          io.Writer
+	Output          io.Writer
+	router          *httprouter.Router
+	middleware      []Handler
+	prefix          string
 }
 
-// New returns a new weavebox object
 func New() *Weavebox {
-	return &Weavebox{
-		router: &router{Router: NewRouter()},
-	}
+	return &Weavebox{router: httprouter.New()}
 }
 
-func (w *Weavebox) init() http.Handler {
-	w.router.NotFoundHandler = w.NotFoundHandler
-	if w.router.errorHandler == nil {
-		w.router.errorHandler = defaultErrHandler
-	}
-	if w.output == nil {
-		w.output = os.Stdout
-	}
-
-	return w.router
-}
-
-// Serve serves the application on the given port
 func (w *Weavebox) Serve(port int) error {
-	h := w.init()
-	fmt.Fprintf(w.output, "app listening on 0.0.0.0:%d\n", port)
-	return http.ListenAndServe(fmt.Sprintf(":%d", port), h)
-}
-
-// ServeTLS serves the application with TLS encription on the given port
-func (w *Weavebox) ServeTLS(port int, certFile, keyFile string) error {
-	h := w.init()
+	w.init()
 	portStr := fmt.Sprintf(":%d", port)
-	fmt.Fprintf(w.output, "listening TLS on 0.0.0.0:%d\n", port)
-	return http.ListenAndServeTLS(portStr, certFile, keyFile, h)
+	fmt.Fprintf(w.Output, "app listening on 0.0.0.0:%d\n", port)
+	return http.ListenAndServe(portStr, w.router)
 }
 
-// Handler is an opinionated / idiom how weavebox thinks a request handler
-// should look like. It carries a context, responseWriter, request and
-// returns an error. Errors returned by Handler can be catched by setting a
-// custom errorHandler, see SetErrorHandler more information.
-type Handler func(ctx *Context, w http.ResponseWriter, r *http.Request) error
-
-// Get registers a route prefix and will invoke the Handler when the route
-// matches the prefix and the request METHOD is GET
 func (w *Weavebox) Get(route string, h Handler) {
-	w.router.add("GET", route, h)
+	w.add("GET", route, h)
 }
 
-// Post registers a route prefix and will invoke the Handler when the route
-// matches the prefix and the request METHOD is POST
 func (w *Weavebox) Post(route string, h Handler) {
-	w.router.add("POST", route, h)
+	w.add("POST", route, h)
 }
 
-// Put registers a route prefix and will invoke the Handler when the route
-// matches the prefix and the request METHOD is PUT
 func (w *Weavebox) Put(route string, h Handler) {
-	w.router.add("PUT", route, h)
+	w.add("PUT", route, h)
 }
 
-// Delete registers a route prefix and will invoke the Handler when the route
-// matches the prefix and the request METHOD is DELETE
 func (w *Weavebox) Delete(route string, h Handler) {
-	w.router.add("DELETE", route, h)
+	w.add("DELETE", route, h)
 }
 
-// Static registers the prefix as a static fileserver for dir
-func (w *Weavebox) Static(prefix string, dir string) {
-	h := http.StripPrefix(prefix, http.FileServer(http.Dir(dir)))
-	w.router.Add("GET", prefix, h)
+func (w *Weavebox) Static(prefix, dir string) {
+	w.router.ServeFiles(path.Join(prefix, "*filepath"), http.Dir(dir))
 }
 
-// Subrouter returns a new Weavebox object that acts as a subrouter.
-// Subrouters will inherit the parents allready defined middleware.
-// Subrouters can have there own errorHandler and middleware.
-// Overiding middleware can be done by calling Middleware on the subrouter
-// instead of calling Register. See the example for detailed information.
-func (w *Weavebox) Subrouter(prefix string) *Weavebox {
-	return &Weavebox{
-		router: &router{
-			Router:       w.router.Router,
-			handlers:     w.router.handlers,
-			prefix:       prefix,
-			errorHandler: w.router.errorHandler,
-		},
+func (w *Weavebox) Use(handlers ...Handler) {
+	for _, h := range handlers {
+		w.middleware = append(w.middleware, h)
 	}
 }
 
-// SetOutput will write a default appache log the given writer
-func (w *Weavebox) SetOutput(writer io.Writer) {
-	w.output = writer
+func (w *Weavebox) Subrouter(prefix string) *Box {
+	b := &Box{*w}
+	b.Weavebox.prefix += prefix
+	return b
 }
 
-// SetErrorHandler will register a errHandleFunc to the router and will
-// handle all errors return by a weave Handler.
-func (w *Weavebox) SetErrorHandler(fn errHandlerFunc) {
-	w.router.errorHandler = fn
+type Box struct {
+	Weavebox
 }
 
-// Middleware accepts a chain of weavebox Handlers that are invoked in order,
-// before invoking the final handler, that is set by calling (Get, Put, Post, Delete).
-// Middleware can be called on subrouters to override the parents middleware.
-// To append middleware use Register instead.
-func (w *Weavebox) Middleware(handlers ...Handler) {
-	w.router.handlers = handlers
+func (b *Box) Reset() *Box {
+	b.Weavebox.middleware = nil
+	return b
 }
 
-// Register appends a single Handler to the middleware. Register can be called
-// on subrouters to add different middleware for each subrouter.
-func (w *Weavebox) Register(h Handler) {
-	w.router.handlers = append(w.router.handlers, h)
+func (w *Weavebox) init() {
+	if w.ErrorHandler == nil {
+		w.ErrorHandler = defaultErrorHandler
+	}
+	if w.NotFoundHandler != nil {
+		w.router.NotFound = w.NotFoundHandler
+	}
+	if w.Output == nil {
+		w.Output = os.Stdout
+	}
 }
 
-type router struct {
-	*Router
-	prefix       string
-	handlers     []Handler
-	errorHandler errHandlerFunc
+func (w *Weavebox) add(method, route string, h Handler) {
+	path := path.Join(w.prefix, route)
+	w.router.Handle(method, path, w.makeHTTPRouterHandle(h))
 }
 
-func (r *router) add(method, route string, h Handler) {
-	r.Add(method, path.Join(r.prefix, route), r.makeHTTPHandler(h))
-}
-
-type errHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
-
-func (r *router) makeHTTPHandler(h Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		ctx := &Context{context.Background(), req.URL.Query()}
-		for _, handler := range r.handlers {
-			if err := handler(ctx, w, req); err != nil {
-				r.errorHandler(w, req, err)
+func (w *Weavebox) makeHTTPRouterHandle(h Handler) httprouter.Handle {
+	return func(rw http.ResponseWriter, r *http.Request, params httprouter.Params) {
+		ctx := &Context{
+			Context: context.Background(),
+			Vars:    params,
+		}
+		for _, handler := range w.middleware {
+			if err := handler(ctx, rw, r); err != nil {
+				w.ErrorHandler(rw, r, err)
 				return
 			}
 		}
-		if err := h(ctx, w, req); err != nil {
-			r.errorHandler(w, req, err)
+
+		if err := h(ctx, rw, r); err != nil {
+			w.ErrorHandler(rw, r, err)
 			return
 		}
 	}
 }
 
-// Context is required in each weavebox handler, and can be used to pass
-// information between requests.
-type Context struct {
-	// Context is idiomatic way for passing information between requests.
-	// More information about context.Context can be found here:
-	// https://godoc.org/golang.org/x/net/context
-	Context context.Context
+type Handler func(ctx *Context, w http.ResponseWriter, r *http.Request) error
 
-	// Vars carries request URL parameters that are passed in route prefixes.
-	// ex. /order/:id => Vars.Get(":id")
-	Vars url.Values
+type ErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
+
+type Context struct {
+	Context context.Context
+	Vars    httprouter.Params
 }
 
-// JSON is a helper function for writing a JSON encoded representation of v
-// to the ResponseWriter
 func JSON(w http.ResponseWriter, code int, v interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	return json.NewEncoder(w).Encode(v)
 }
 
-// Text is a helper function for writing plain text.
-func Text(w http.ResponseWriter, code int, str string) error {
+func Text(w http.ResponseWriter, code int, text string) error {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(code)
-	w.Write([]byte(str))
+	w.Write([]byte(text))
 	return nil
 }
