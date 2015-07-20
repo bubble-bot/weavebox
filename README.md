@@ -1,2 +1,2 @@
 # weavebox
-opinion based minimalistic webkit backed by gorilla mux
+opinion based minimalistic webkit for the Go programming language
