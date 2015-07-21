@@ -28,10 +28,6 @@ func (t *TemplateEngine) Render(w io.Writer, name string, data interface{}) erro
 	return fmt.Errorf("template %s could not be found", name)
 }
 
-func (t *TemplateEngine) SetLayout(s string) {
-	t.layout = s
-}
-
 func (t *TemplateEngine) SetTemplates(templates ...string) {
 	for _, template := range templates {
 		t.templates = append(t.templates, template)
