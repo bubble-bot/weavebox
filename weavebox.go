@@ -35,10 +35,12 @@ type Weavebox struct {
 	Output io.Writer
 
 	// EnableLog lets you turn of the default access-log
-	EnableLog  bool
-	router     *httprouter.Router
-	middleware []Handler
-	prefix     string
+	EnableLog bool
+
+	templateEngine Renderer
+	router         *httprouter.Router
+	middleware     []Handler
+	prefix         string
 }
 
 // New returns a new Weavebox object
@@ -113,6 +115,23 @@ func (w *Weavebox) Subrouter(prefix string) *Box {
 	return b
 }
 
+// Box act as a subrouter and wil inherit all of its parents middleware
+type Box struct {
+	Weavebox
+}
+
+// Reset clears all middleware
+func (b *Box) Reset() *Box {
+	b.Weavebox.middleware = nil
+	return b
+}
+
+// SetTemplateEngine allows the use of any template engine out there, if it
+// satisfies the Renderer interface
+func (w *Weavebox) SetTemplateEngine(t Renderer) {
+	w.templateEngine = t
+}
+
 // ServeHTTP
 func (w *Weavebox) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if w.EnableLog {
@@ -124,17 +143,6 @@ func (w *Weavebox) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	} else {
 		w.router.ServeHTTP(rw, r)
 	}
-}
-
-// Box act as a subrouter and wil inherit all of its parents middleware
-type Box struct {
-	Weavebox
-}
-
-// Reset clears all middleware
-func (b *Box) Reset() *Box {
-	b.Weavebox.middleware = nil
-	return b
 }
 
 func (w *Weavebox) init() {
@@ -151,8 +159,9 @@ func (w *Weavebox) add(method, route string, h Handler) {
 func (w *Weavebox) makeHTTPRouterHandle(h Handler) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		ctx := &Context{
-			Context: context.Background(),
-			Vars:    params,
+			Context:  context.Background(),
+			Vars:     params,
+			weavebox: w,
 		}
 		for _, handler := range w.middleware {
 			if err := handler(ctx, rw, r); err != nil {
@@ -200,23 +209,13 @@ type Context struct {
 
 	// Vars carries the named request URL parameters that are passed in the route
 	// prefix. To get a parameter by name: Vars.GetByName(<param>)
-	Vars httprouter.Params
+	Vars     httprouter.Params
+	weavebox *Weavebox
 }
 
-// JSON is a helper function for writing a JSON encoded representation of v to
-// the ResponseWriter.
-func JSON(w http.ResponseWriter, code int, v interface{}) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	return json.NewEncoder(w).Encode(v)
-}
-
-// Text is a helper function for writing a text/plain string to the ResponseWriter
-func Text(w http.ResponseWriter, code int, text string) error {
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(code)
-	w.Write([]byte(text))
-	return nil
+// Render calls the templateEngines Render function
+func (c *Context) Render(w io.Writer, name string, data interface{}) error {
+	return c.weavebox.templateEngine.Render(w, name, data)
 }
 
 type responseLogger struct {
@@ -249,4 +248,26 @@ func (l *responseLogger) Status() int {
 
 func (l *responseLogger) Size() int {
 	return l.size
+}
+
+// Renderer renders any kind of template. Weavebox allows the use of different
+// Template engines if they implement the Render method
+type Renderer interface {
+	Render(w io.Writer, name string, data interface{}) error
+}
+
+// JSON is a helper function for writing a JSON encoded representation of v to
+// the ResponseWriter.
+func JSON(w http.ResponseWriter, code int, v interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	return json.NewEncoder(w).Encode(v)
+}
+
+// Text is a helper function for writing a text/plain string to the ResponseWriter
+func Text(w http.ResponseWriter, code int, text string) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(code)
+	w.Write([]byte(text))
+	return nil
 }
