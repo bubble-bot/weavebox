@@ -14,13 +14,13 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Weavebox is opinion based minimalistic web framework for making fast and
-// powerfull web application in the Go programming language. It is backed by
-// the fastest and most optimized request router available.
-
 var defaultErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
+
+// Weavebox is opinion based minimalistic web framework for making fast and
+// powerfull web application in the Go programming language. It is backed by
+// the fastest and most optimized request router available.
 
 type Weavebox struct {
 	// ErrorHandler is invoked whenever a Handler returns an error
