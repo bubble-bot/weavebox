@@ -44,9 +44,10 @@ type Weavebox struct {
 // New returns a new Weavebox object
 func New() *Weavebox {
 	return &Weavebox{
-		router:    httprouter.New(),
-		Output:    os.Stderr,
-		EnableLog: true,
+		router:       httprouter.New(),
+		Output:       os.Stderr,
+		ErrorHandler: defaultErrorHandler,
+		EnableLog:    true,
 	}
 }
 
@@ -137,9 +138,6 @@ func (b *Box) Reset() *Box {
 }
 
 func (w *Weavebox) init() {
-	if w.ErrorHandler == nil {
-		w.ErrorHandler = defaultErrorHandler
-	}
 	if w.NotFoundHandler != nil {
 		w.router.NotFound = w.NotFoundHandler
 	}
