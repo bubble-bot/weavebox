@@ -54,7 +54,15 @@ func (w *Weavebox) Serve(port int) error {
 	w.init()
 	portStr := fmt.Sprintf(":%d", port)
 	fmt.Fprintf(w.Output, "app listening on 0.0.0.0:%d\n", port)
-	return http.ListenAndServe(portStr, w)
+	return ListenAndServe(portStr, w)
+}
+
+// ServeTLS servers the application one the given port with TLS encription.
+func (w *Weavebox) ServeTLS(port int, keyFile, certFile string) error {
+	w.init()
+	portStr := fmt.Sprintf(":%d", port)
+	fmt.Fprintf(w.Output, "app listening on 0.0.0.0:%d\n", port)
+	return ListenAndServeTLS(portStr, w, keyFile, certFile)
 }
 
 // Get registers a route prefix and will invoke the Handler when the route
