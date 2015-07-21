@@ -16,7 +16,8 @@ import (
 
 // weavebox is opinion based minimalistic web framework for making fast and
 // powerfull web application in the Go programming language. It is backed by
-// the fastest and most optimized request router available.
+// the fastest and most optimized request router available. Weavebox also
+// provides a gracefull webserver that can serve TLS encripted requests aswell.
 
 var defaultErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
