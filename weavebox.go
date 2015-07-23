@@ -216,7 +216,7 @@ func (c *Context) Render(w io.Writer, name string, data interface{}) error {
 }
 
 // Param returns the url named parameter given in the route prefix by its name
-// app.Get("/:name") => ctx.Param("name")
+// 	app.Get("/:name") => ctx.Param("name")
 func (c *Context) Param(name string) string {
 	return c.vars.ByName(name)
 }
