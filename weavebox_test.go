@@ -38,11 +38,55 @@ func TestMethodDelete(t *testing.T) {
 	isHTTPStatusOK(t, code)
 }
 
+func TestSubrouter(t *testing.T) {
+	w := New()
+	sr := w.Subrouter("/foo")
+	sr.Get("/bar", noopHandler)
+	code, _ := doRequest(t, "GET", "/foo/bar", nil, w)
+	isHTTPStatusOK(t, code)
+}
+
+func TestStatic(t *testing.T) {
+	t.Error("TODO")
+}
+
+func TestMiddleware(t *testing.T) {
+	t.Error("TODO")
+}
+
+func TestBoxMiddlewareReset(t *testing.T) {
+	t.Error("TODO")
+}
+
+func TestErrorHandler(t *testing.T) {
+	t.Error("TODO")
+}
+
+func TestWeaveboxHandler(t *testing.T) {
+	w := New()
+	handle := func(respStr string) Handler {
+		return func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+			return Text(w, http.StatusOK, respStr)
+		}
+	}
+	w.Get("/a", handle("a"))
+	w.Get("/b", handle("b"))
+	w.Get("/c", handle("c"))
+
+	for _, r := range []string{"a", "b", "c"} {
+		code, body := doRequest(t, "GET", "/"+r, nil, w)
+		isHTTPStatusOK(t, code)
+		if body != r {
+			t.Errorf("expecting %s got %s", r, body)
+		}
+	}
+}
+
 func TestNotFoundHandler(t *testing.T) {
 	w := New()
 	code, body := doRequest(t, "GET", "/", nil, w)
 	if code != http.StatusNotFound {
-		t.Error("expecting code 404 got %d", code)
+		t.Errorf("expecting code 404 got %d", code)
 	}
 	if !strings.Contains(body, "404 page not found") {
 		t.Errorf("expecting body: 404 page not found got %s", body)
@@ -62,7 +106,7 @@ func TestNotFoundHandlerOverride(t *testing.T) {
 	w.init()
 	code, body := doRequest(t, "GET", "/", nil, w)
 	if code != http.StatusNotFound {
-		t.Error("expecting code 404 got %d", code)
+		t.Errorf("expecting code 404 got %d", code)
 	}
 	if !strings.Contains(body, notFoundMsg) {
 		t.Errorf("expecting body: %s got %s", notFoundMsg, body)

@@ -195,7 +195,7 @@ func (w *Weavebox) writeLog(r *http.Request, start time.Time, status, size int) 
 // look like. It requires a Context, ResponseWriter, Request and returns an error
 type Handler func(ctx *Context, w http.ResponseWriter, r *http.Request) error
 
-// ErrorHandlerFunc is invoked when a Handler return an error and can be used
+// ErrorHandlerFunc is invoked when a Handler returns an error, and can be used
 // to centralize error handling.
 type ErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
 
