@@ -94,7 +94,7 @@ func (w *Weavebox) Delete(route string, h Handler) {
 }
 
 // Static registers the prefix to the router and start to act as a fileserver
-// ex. "/public", "./assets"
+// 	app.Static("/public", "./assets")
 func (w *Weavebox) Static(prefix, dir string) {
 	w.router.ServeFiles(path.Join(prefix, "*filepath"), http.Dir(dir))
 }
