@@ -62,7 +62,7 @@ func dbContextHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Requ
 // Only the powerfull have access to the admin routes
 func authenticate(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
 	admins := []string{"toby", "master iy", "c.froome"}
-	name := ctx.Vars.ByName("name")
+	name := ctx.Param("name")
 
 	for _, admin := range admins {
 		if admin == name {
@@ -78,14 +78,14 @@ func datastoreFromContext(ctx context.Context) *datastore {
 }
 
 func greetingHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
-	name := ctx.Vars.ByName("name")
+	name := ctx.Param("name")
 	db := datastoreFromContext(ctx.Context)
 	greeting := fmt.Sprintf("Greetings, %s\nYour database %s is ready", name, db.name)
 	return weavebox.Text(w, http.StatusOK, greeting)
 }
 
 func adminGreetingHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
-	name := ctx.Vars.ByName("name")
+	name := ctx.Param("name")
 	db := datastoreFromContext(ctx.Context)
 	greeting := fmt.Sprintf("Greetings powerfull admin, %s\nYour database %s is ready", name, db.name)
 	return weavebox.Text(w, http.StatusOK, greeting)

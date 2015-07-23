@@ -160,7 +160,7 @@ func (w *Weavebox) makeHTTPRouterHandle(h Handler) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		ctx := &Context{
 			Context:  context.Background(),
-			Vars:     params,
+			vars:     params,
 			weavebox: w,
 		}
 		for _, handler := range w.middleware {
@@ -205,17 +205,20 @@ type Context struct {
 	// Context is a idiomatic way to pass information between requests.
 	// More information about context.Context can be found here:
 	// https://godoc.org/golang.org/x/net/context
-	Context context.Context
-
-	// Vars carries the named request URL parameters that are passed in the route
-	// prefix. To get a parameter by name: Vars.GetByName(<param>)
-	Vars     httprouter.Params
+	Context  context.Context
+	vars     httprouter.Params
 	weavebox *Weavebox
 }
 
 // Render calls the templateEngines Render function
 func (c *Context) Render(w io.Writer, name string, data interface{}) error {
 	return c.weavebox.templateEngine.Render(w, name, data)
+}
+
+// Param returns the url named parameter given in the route prefix by its name
+// app.Get("/:name") => ctx.Param("name")
+func (c *Context) Param(name string) string {
+	return c.vars.ByName(name)
 }
 
 type responseLogger struct {
