@@ -13,6 +13,14 @@ Opinion based minimalistic web framework for the Go programming language
 - fast, lightweight and extendable
 
 ## Basic usage
+`
+app := weavebox.New()
+app.Get("/foo", fooHandler)
+app.Post("/bar", barHandler)
+app.Use(authenticate)
+app.Serve(8080)
+`
+More complete examples can be found in the examples folder
 
 ## Routes
 
