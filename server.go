@@ -2,10 +2,12 @@ package weavebox
 
 import (
 	"crypto/tls"
+	"errors"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -89,14 +91,18 @@ func (s *Server) serve(l net.Listener) error {
 	for {
 		select {
 		case err := <-errChan:
+			if strings.Contains(err.Error(), useClosedConn) {
+				continue
+			}
 			return err
 		case <-s.quit:
 			s.wg.Wait()
-			break
+			return errors.New("server stopped gracefully")
 		}
 	}
-	return nil
 }
+
+const useClosedConn = "use of closed network connection"
 
 func (s *Server) closeNotify(l net.Listener) {
 	sig := make(chan os.Signal, 1)
