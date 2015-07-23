@@ -43,12 +43,6 @@ func (t *TemplateEngine) SetTemplates(templates ...string) {
 
 // SetTemplatesWithLayout sets a layout and parses all given templates with that
 // layout.
-//
-// SetTemplatesWithLayout("layout.html",
-// 		"user/index.html",
-//		"user/list.html",
-//		"user/create.html",
-// )
 func (t *TemplateEngine) SetTemplatesWithLayout(layout string, templates ...string) {
 	t.templWithLayout[layout] = templates
 }
