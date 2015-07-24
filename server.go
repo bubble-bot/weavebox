@@ -14,19 +14,22 @@ import (
 )
 
 // Server provides a gracefull shutdown of http server.
-type Server struct {
+type server struct {
 	*http.Server
-	CloseTimeout time.Duration
-	quit         chan struct{}
-	wg           sync.WaitGroup
+	quit chan struct{}
+	wg   sync.WaitGroup
 }
 
 // ListenAndServe accepts http requests and start a goroutine for each request
 func ListenAndServe(addr string, h http.Handler) error {
-	s := &Server{
-		Server:       &http.Server{Addr: addr, Handler: h},
-		quit:         make(chan struct{}, 1),
-		CloseTimeout: 400,
+	s := &server{
+		Server: &http.Server{
+			Addr:         addr,
+			Handler:      h,
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 10 * time.Second,
+		},
+		quit: make(chan struct{}, 1),
 	}
 	return s.listen()
 }
@@ -34,15 +37,14 @@ func ListenAndServe(addr string, h http.Handler) error {
 // ListenAndServeTLS accepts http TLS encrypted requests and starts a goroutine
 // for each request
 func ListenAndServeTLS(addr string, h http.Handler, cert, key string) error {
-	s := &Server{
-		Server:       &http.Server{Addr: addr, Handler: h},
-		quit:         make(chan struct{}, 1),
-		CloseTimeout: 400,
+	s := &server{
+		Server: &http.Server{Addr: addr, Handler: h},
+		quit:   make(chan struct{}, 1),
 	}
 	return s.listenTLS(cert, key)
 }
 
-func (s *Server) listen() error {
+func (s *server) listen() error {
 	l, err := net.Listen("tcp", s.Addr)
 	if err != nil {
 		return err
@@ -50,7 +52,7 @@ func (s *Server) listen() error {
 	return s.serve(l)
 }
 
-func (s *Server) listenTLS(cert, key string) error {
+func (s *server) listenTLS(cert, key string) error {
 	var err error
 	config := &tls.Config{}
 	if config.NextProtos == nil {
@@ -72,7 +74,7 @@ func (s *Server) listenTLS(cert, key string) error {
 
 // Serve hooks in the Server.ConnState to incr and decr the waitgroup based on
 // the connection state.
-func (s *Server) serve(l net.Listener) error {
+func (s *server) serve(l net.Listener) error {
 	s.Server.ConnState = func(conn net.Conn, state http.ConnState) {
 		switch state {
 		case http.StateNew:
@@ -96,6 +98,7 @@ func (s *Server) serve(l net.Listener) error {
 			}
 			return err
 		case <-s.quit:
+			s.SetKeepAlivesEnabled(false)
 			s.wg.Wait()
 			return errors.New("server stopped gracefully")
 		}
@@ -104,7 +107,7 @@ func (s *Server) serve(l net.Listener) error {
 
 const useClosedConn = "use of closed network connection"
 
-func (s *Server) closeNotify(l net.Listener) {
+func (s *server) closeNotify(l net.Listener) {
 	sig := make(chan os.Signal, 1)
 
 	signal.Notify(
