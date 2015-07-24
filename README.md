@@ -1,6 +1,5 @@
 # weavebox [![GoDoc](https://godoc.org/github.com/twanies/weavebox?status.svg)](https://godoc.org/github.com/twanies/weavebox)
-Opinion based minimalistic web framework for the Go programming language
-[GoDoc reference](http://godoc.org/github.com/twanies/weavebox)
+Opinion based minimalistic web framework for the Go programming language.
 
 ## Installation
 `go get github.com/twanies/weavebox`
