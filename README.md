@@ -1,5 +1,7 @@
 # weavebox
 Opinion based minimalistic web framework for the Go programming language
+### Godoc
+[GoDoc reference](http://godoc.org/github.com/twanies/weavebox)
 
 ## Installation
 `go get github.com/twanies/weavebox`
@@ -13,7 +15,6 @@ Opinion based minimalistic web framework for the Go programming language
 - fast, lightweight and extendable
 
 ## Basic usage
-    
     package main
     import "github.com/twanies/weavebox"
 
