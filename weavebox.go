@@ -41,6 +41,7 @@ type Weavebox struct {
 	router         *httprouter.Router
 	middleware     []Handler
 	prefix         string
+	context        context.Context
 }
 
 // New returns a new Weavebox object
@@ -97,6 +98,14 @@ func (w *Weavebox) Delete(route string, h Handler) {
 // 	app.Static("/public", "./assets")
 func (w *Weavebox) Static(prefix, dir string) {
 	w.router.ServeFiles(path.Join(prefix, "*filepath"), http.Dir(dir))
+}
+
+// BindContext lets you provide a context that will live a full http roundtrip
+// BindContext is mostly used in a func main() to provide init variables that
+// may be created only once, like a database connection. If BindContext is not
+// called, weavebox will use a context.Background()
+func (w *Weavebox) BindContext(ctx context.Context) {
+	w.context = ctx
 }
 
 // Use appends a Handler to the box middleware. Different middleware can be set
@@ -158,8 +167,11 @@ func (w *Weavebox) add(method, route string, h Handler) {
 
 func (w *Weavebox) makeHTTPRouterHandle(h Handler) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, params httprouter.Params) {
+		if w.context == nil {
+			w.context = context.Background()
+		}
 		ctx := &Context{
-			Context:  context.Background(),
+			Context:  w.context,
 			vars:     params,
 			weavebox: w,
 		}
@@ -169,7 +181,6 @@ func (w *Weavebox) makeHTTPRouterHandle(h Handler) httprouter.Handle {
 				return
 			}
 		}
-
 		if err := h(ctx, rw, r); err != nil {
 			w.ErrorHandler(rw, r, err)
 			return
