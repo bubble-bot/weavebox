@@ -54,12 +54,23 @@ get named url parameters
     })
 
 ## Static files
+Make our assets are accessable trough /assets/styles.css
+
     app := weavebox.New()
     app.Static("/assets", "public/assets")
 
-Now our assets are accessable trough /assets/styles.css
-
 ## Handlers
+### A definition of a weavebox.Handler
+
+    func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error
+
+### Convert anything to weavebox.Handler
+    func myHandler(name string) weavebox.Handler{
+        .. do something ..
+       return func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+            return weavebox.Text(w, http.StatusOK, name)
+       }
+    }
 
 ## Context
 
