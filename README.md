@@ -64,7 +64,8 @@ Make our assets are accessable trough /assets/styles.css
 
     func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error
 
-### Convert anything to weavebox.Handler
+Weavebox only accepts handlers of type `weavebox.Handler` to be passed as functions in routes. You can convert any type of handler to a `weavebox.Handler`.
+
     func myHandler(name string) weavebox.Handler{
         .. do something ..
        return func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
