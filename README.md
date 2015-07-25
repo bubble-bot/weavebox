@@ -73,6 +73,32 @@ Weavebox only accepts handlers of type `weavebox.Handler` to be passed as functi
        }
     }
 
+### Returning errors
+Each handler requires a return of an error. This is personal idiom but it brings some benifits for handling your errors inside request handlers.
+    
+    func someHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+        // simple error handling by returning all errors 
+        err := someFunc(); err != nil {
+            return err
+        }
+        ...
+        req, err := http.NewRequest(...)
+        if err != nil {
+            return err
+        }
+    }
+
+A weavebox ErrorHandlerFunc    
+
+    func(w http.ResponseWriter, r *http.Request, err error)
+    
+Handle all errors returned by adding a custom errorHandler for our application.
+
+    app := weavebox.New()
+    app.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+        .. handle the error ..
+    }
+
 ## Context
 
 ## View / Templates
