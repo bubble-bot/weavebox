@@ -47,13 +47,17 @@ More complete examples can be found in the examples folder
        .. do something .. 
     })
 
-get named url paramaters
+get named url parameters
 
     app.Get("/hello/:name", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
         name := ctx.Param("name")
     })
 
 ## Static files
+    app := weavebox.New()
+    app.Static("/assets", "public/assets")
+
+Now our assets are accessable trough /assets/styles.css
 
 ## Handlers
 
