@@ -1,7 +1,3 @@
 language: go
 go: 
     - tip
-before_install:
-    - go get ./...
-script:
-    - go test
