@@ -33,6 +33,7 @@ More complete examples can be found in the examples folder
 
 ## Routes
     app := weavebox.New()
+
     app.Get("/", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
        .. do something .. 
     })
@@ -45,7 +46,9 @@ More complete examples can be found in the examples folder
     app.Delete("/", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
        .. do something .. 
     })
+
 get named url paramaters
+
     app.Get("/hello/:name", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
         name := ctx.Param("name")
     })
