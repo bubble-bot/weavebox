@@ -32,6 +32,23 @@ Opinion based minimalistic web framework for the Go programming language.
 More complete examples can be found in the examples folder
 
 ## Routes
+    app := weavebox.New()
+    app.Get("/", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+       .. do something .. 
+    })
+    app.Post("/", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+       .. do something .. 
+    })
+    app.Put("/", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+       .. do something .. 
+    })
+    app.Delete("/", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+       .. do something .. 
+    })
+get named url paramaters
+    app.Get("/hello/:name", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+        name := ctx.Param("name")
+    })
 
 ## Static files
 
