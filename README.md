@@ -99,13 +99,6 @@ Handle all errors returned by adding a custom errorHandler for our application.
         .. handle the error ..
     }
 
-### Heplers
-JSON helper for responding a JSON representation of v
-    ctx.JSON(code int, v interface{}) error
-
-Text helper for responding plain/text strings
-    ctx.Test(code int, text string)
-
 ## Context
 
 ## View / Templates
