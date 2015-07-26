@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-var noopHandler = func(ctx *Context, w http.ResponseWriter, r *http.Request) error { return nil }
+var noopHandler = func(ctx *Context) error { return nil }
 
 func TestMethodGet(t *testing.T) {
 	w := New()
@@ -71,7 +71,7 @@ func TestStatic(t *testing.T) {
 func TestContext(t *testing.T) {
 	w := New()
 	w.Get("/", checkContext(t, "m1", "m1"))
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		ctx.Context = context.WithValue(ctx.Context, "m1", "m1")
 		return nil
 	})
@@ -79,9 +79,9 @@ func TestContext(t *testing.T) {
 	isHTTPStatusOK(t, code)
 
 	w.Get("/some", checkContext(t, "m1", "m2"))
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		ctx.Context = context.WithValue(ctx.Context, "m1", "m2")
-		w.WriteHeader(http.StatusBadRequest)
+		ctx.Response().WriteHeader(http.StatusBadRequest)
 		return nil
 	})
 	code, _ = doRequest(t, "GET", "/some", nil, w)
@@ -91,7 +91,7 @@ func TestContext(t *testing.T) {
 }
 
 func checkContext(t *testing.T, key, expect string) Handler {
-	return func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	return func(ctx *Context) error {
 		value := ctx.Context.Value(key).(string)
 		if value != expect {
 			t.Errorf("expected %s got %s", expect, value)
@@ -103,19 +103,19 @@ func checkContext(t *testing.T, key, expect string) Handler {
 func TestMiddleware(t *testing.T) {
 	buf := &bytes.Buffer{}
 	w := New()
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		buf.WriteString("a")
 		return nil
 	})
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		buf.WriteString("b")
 		return nil
 	})
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		buf.WriteString("c")
 		return nil
 	})
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		buf.WriteString("d")
 		return nil
 	})
@@ -130,11 +130,11 @@ func TestMiddleware(t *testing.T) {
 func TestBoxMiddlewareReset(t *testing.T) {
 	buf := &bytes.Buffer{}
 	w := New()
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		buf.WriteString("a")
 		return nil
 	})
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		buf.WriteString("b")
 		return nil
 	})
@@ -150,11 +150,11 @@ func TestBoxMiddlewareReset(t *testing.T) {
 func TestBoxMiddlewareInheritsParent(t *testing.T) {
 	buf := &bytes.Buffer{}
 	w := New()
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		buf.WriteString("a")
 		return nil
 	})
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		buf.WriteString("b")
 		return nil
 	})
@@ -170,13 +170,13 @@ func TestBoxMiddlewareInheritsParent(t *testing.T) {
 func TestErrorHandler(t *testing.T) {
 	w := New()
 	errorMsg := "oops! something went wrong"
-	w.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		w.WriteHeader(http.StatusInternalServerError)
+	w.ErrorHandler = func(ctx *Context, err error) {
+		ctx.Response().WriteHeader(http.StatusInternalServerError)
 		if err.Error() != errorMsg {
 			t.Error("expecting %s, got %s", errorMsg, err.Error())
 		}
 	}
-	w.Use(func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+	w.Use(func(ctx *Context) error {
 		return errors.New(errorMsg)
 	})
 	w.Get("/", noopHandler)
@@ -189,8 +189,8 @@ func TestErrorHandler(t *testing.T) {
 func TestWeaveboxHandler(t *testing.T) {
 	w := New()
 	handle := func(respStr string) Handler {
-		return func(ctx *Context, w http.ResponseWriter, r *http.Request) error {
-			return Text(w, http.StatusOK, respStr)
+		return func(ctx *Context) error {
+			return ctx.Text(http.StatusOK, respStr)
 		}
 	}
 	w.Get("/a", handle("a"))
@@ -221,7 +221,8 @@ func TestNotFoundHandlerOverride(t *testing.T) {
 	w := New()
 	notFoundMsg := "hey! not found"
 	w.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Text(w, http.StatusNotFound, notFoundMsg)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(notFoundMsg))
 	})
 
 	// init is called before serve or serveTLS to initialize some data that

@@ -53,14 +53,15 @@ func (c *dbContext) Value(key interface{}) interface{} {
 func newDatastoreContext(parent context.Context, ds *datastore) context.Context {
 	return &dbContext{parent, ds}
 }
-func dbContextHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+
+func dbContextHandler(ctx *weavebox.Context) error {
 	db := datastore{"mydatabase"}
 	ctx.Context = newDatastoreContext(ctx.Context, &db)
 	return nil
 }
 
 // Only the powerfull have access to the admin routes
-func authenticate(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+func authenticate(ctx *weavebox.Context) error {
 	admins := []string{"toby", "master iy", "c.froome"}
 	name := ctx.Param("name")
 
@@ -77,21 +78,21 @@ func datastoreFromContext(ctx context.Context) *datastore {
 	return ctx.Value("datastore").(*datastore)
 }
 
-func greetingHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+func greetingHandler(ctx *weavebox.Context) error {
 	name := ctx.Param("name")
 	db := datastoreFromContext(ctx.Context)
 	greeting := fmt.Sprintf("Greetings, %s\nYour database %s is ready", name, db.name)
-	return weavebox.Text(w, http.StatusOK, greeting)
+	return ctx.Text(http.StatusOK, greeting)
 }
 
-func adminGreetingHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+func adminGreetingHandler(ctx *weavebox.Context) error {
 	name := ctx.Param("name")
 	db := datastoreFromContext(ctx.Context)
 	greeting := fmt.Sprintf("Greetings powerfull admin, %s\nYour database %s is ready", name, db.name)
-	return weavebox.Text(w, http.StatusOK, greeting)
+	return ctx.Text(http.StatusOK, greeting)
 }
 
 // custom centralized error handling
-func errorHandler(w http.ResponseWriter, r *http.Request, err error) {
-	http.Error(w, "Hey some error occured: "+err.Error(), http.StatusInternalServerError)
+func errorHandler(ctx *weavebox.Context, err error) {
+	http.Error(ctx.Response(), "Hey some error occured: "+err.Error(), http.StatusInternalServerError)
 }

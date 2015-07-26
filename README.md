@@ -34,22 +34,22 @@ More complete examples can be found in the examples folder
 ## Routes
     app := weavebox.New()
 
-    app.Get("/", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+    app.Get("/", func(ctx *weavebox.Context) error {
        .. do something .. 
     })
-    app.Post("/", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+    app.Post("/", func(ctx *weavebox.Context) error {
        .. do something .. 
     })
-    app.Put("/", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+    app.Put("/", func(ctx *weavebox.Context) error {
        .. do something .. 
     })
-    app.Delete("/", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+    app.Delete("/", func(ctx *weavebox.Context) error {
        .. do something .. 
     })
 
 get named url parameters
 
-    app.Get("/hello/:name", func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+    app.Get("/hello/:name", func(ctx *weavebox.Context) error {
         name := ctx.Param("name")
     })
 
@@ -62,21 +62,21 @@ Make our assets are accessable trough /assets/styles.css
 ## Handlers
 ### A definition of a weavebox.Handler
 
-    func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error
+    func(ctx *weavebox.Context) error
 
 Weavebox only accepts handlers of type `weavebox.Handler` to be passed as functions in routes. You can convert any type of handler to a `weavebox.Handler`.
 
     func myHandler(name string) weavebox.Handler{
         .. do something ..
-       return func(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
-            return weavebox.Text(w, http.StatusOK, name)
+       return func(ctx *weavebox.Context) error {
+            return ctx.Text(w, http.StatusOK, name)
        }
     }
 
 ### Returning errors
 Each handler requires a return of an error. This is personal idiom but it brings some benifits for handling your errors inside request handlers.
     
-    func someHandler(ctx *weavebox.Context, w http.ResponseWriter, r *http.Request) error {
+    func someHandler(ctx *weavebox.Context) error {
         // simple error handling by returning all errors 
         err := someFunc(); err != nil {
             return err
@@ -90,14 +90,21 @@ Each handler requires a return of an error. This is personal idiom but it brings
 
 A weavebox ErrorHandlerFunc    
 
-    func(w http.ResponseWriter, r *http.Request, err error)
+    func(ctx *weavebox.Context, err error)
     
 Handle all errors returned by adding a custom errorHandler for our application.
 
     app := weavebox.New()
-    app.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+    app.ErrorHandler = func(ctx *weavebox.Context, err error) {
         .. handle the error ..
     }
+
+### Heplers
+JSON helper for responding a JSON representation of v
+    ctx.JSON(code int, v interface{}) error
+
+Text helper for responding plain/text strings
+    ctx.Test(code int, text string)
 
 ## Context
 

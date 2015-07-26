@@ -8,7 +8,7 @@ import (
 func BenchmarkGetWithValues(b *testing.B) {
 	app := New()
 	app.EnableLog = false
-	app.Get("/hello/:name", func(ctx *Context, w http.ResponseWriter, r *http.Request) error { return nil })
+	app.Get("/hello/:name", func(ctx *Context) error { return nil })
 
 	for i := 0; i < b.N; i++ {
 		r, err := http.NewRequest("GET", "/hello/anthony", nil)
@@ -23,7 +23,7 @@ func BenchmarkSubrouterGetWithValues(b *testing.B) {
 	app := New()
 	app.EnableLog = false
 	admin := app.Subrouter("/admin")
-	admin.Get("/:name", func(ctx *Context, w http.ResponseWriter, r *http.Request) error { return nil })
+	admin.Get("/:name", func(ctx *Context) error { return nil })
 
 	for i := 0; i < b.N; i++ {
 		r, err := http.NewRequest("GET", "/admin/anthony", nil)

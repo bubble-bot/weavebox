@@ -19,8 +19,8 @@ import (
 // the fastest and most optimized request router available. Weavebox also
 // provides a gracefull webserver that can serve TLS encripted requests aswell.
 
-var defaultErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-	http.Error(w, err.Error(), http.StatusInternalServerError)
+var defaultErrorHandler = func(ctx *Context, err error) {
+	http.Error(ctx.Response(), err.Error(), http.StatusInternalServerError)
 }
 
 type Weavebox struct {
@@ -173,16 +173,18 @@ func (w *Weavebox) makeHTTPRouterHandle(h Handler) httprouter.Handle {
 		ctx := &Context{
 			Context:  w.context,
 			vars:     params,
+			response: rw,
+			request:  r,
 			weavebox: w,
 		}
 		for _, handler := range w.middleware {
-			if err := handler(ctx, rw, r); err != nil {
-				w.ErrorHandler(rw, r, err)
+			if err := handler(ctx); err != nil {
+				w.ErrorHandler(ctx, err)
 				return
 			}
 		}
-		if err := h(ctx, rw, r); err != nil {
-			w.ErrorHandler(rw, r, err)
+		if err := h(ctx); err != nil {
+			w.ErrorHandler(ctx, err)
 			return
 		}
 	}
@@ -202,13 +204,12 @@ func (w *Weavebox) writeLog(r *http.Request, start time.Time, status, size int) 
 	)
 }
 
-// Handler is a opinion / idiom of how weavebox thinks a request handler should
-// look like. It requires a Context, ResponseWriter, Request and returns an error
-type Handler func(ctx *Context, w http.ResponseWriter, r *http.Request) error
+// Handler is a weavebox idiom for handling http.Requests
+type Handler func(ctx *Context) error
 
 // ErrorHandlerFunc is invoked when a Handler returns an error, and can be used
 // to centralize error handling.
-type ErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
+type ErrorHandlerFunc func(ctx *Context, err error)
 
 // Context is required in each weavebox Handler and can be used to pass information
 // between requests.
@@ -217,13 +218,41 @@ type Context struct {
 	// More information about context.Context can be found here:
 	// https://godoc.org/golang.org/x/net/context
 	Context  context.Context
+	response http.ResponseWriter
+	request  *http.Request
 	vars     httprouter.Params
 	weavebox *Weavebox
 }
 
+// Response returns a default http.ResponseWriter
+func (c *Context) Response() http.ResponseWriter {
+	return c.response
+}
+
+// Request returns a default http.Request ptr
+func (c *Context) Request() *http.Request {
+	return c.request
+}
+
+// JSON is a helper function for writing a JSON encoded representation of v to
+// the ResponseWriter.
+func (c *Context) JSON(code int, v interface{}) error {
+	c.Response().Header().Set("Content-Type", "application/json")
+	c.Response().WriteHeader(code)
+	return json.NewEncoder(c.Response()).Encode(v)
+}
+
+// Text is a helper function for writing a text/plain string to the ResponseWriter
+func (c *Context) Text(code int, text string) error {
+	c.Response().Header().Set("Content-Type", "text/plain")
+	c.Response().WriteHeader(code)
+	c.Response().Write([]byte(text))
+	return nil
+}
+
 // Render calls the templateEngines Render function
-func (c *Context) Render(w io.Writer, name string, data interface{}) error {
-	return c.weavebox.templateEngine.Render(w, name, data)
+func (c *Context) Render(name string, data interface{}) error {
+	return c.weavebox.templateEngine.Render(c.Response(), name, data)
 }
 
 // Param returns the url named parameter given in the route prefix by its name
@@ -268,20 +297,4 @@ func (l *responseLogger) Size() int {
 // Template engines if they implement the Render method
 type Renderer interface {
 	Render(w io.Writer, name string, data interface{}) error
-}
-
-// JSON is a helper function for writing a JSON encoded representation of v to
-// the ResponseWriter.
-func JSON(w http.ResponseWriter, code int, v interface{}) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	return json.NewEncoder(w).Encode(v)
-}
-
-// Text is a helper function for writing a text/plain string to the ResponseWriter
-func Text(w http.ResponseWriter, code int, text string) error {
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(code)
-	w.Write([]byte(text))
-	return nil
 }
