@@ -250,6 +250,12 @@ func (c *Context) Text(code int, text string) error {
 	return nil
 }
 
+// DecodeJSON is a helper that decodes the request Body to v
+// More in depth use for decoding and encoding JSON use the std JSON package
+func (c *Context) DecodeJSON(v interface{}) error {
+	return json.NewDecoder(c.Request().Body).Decode(v)
+}
+
 // Render calls the templateEngines Render function
 func (c *Context) Render(name string, data interface{}) error {
 	return c.weavebox.templateEngine.Render(c.Response(), name, data)
