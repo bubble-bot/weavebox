@@ -2,6 +2,7 @@ package weavebox
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -262,9 +263,29 @@ func (c *Context) Render(name string, data interface{}) error {
 }
 
 // Param returns the url named parameter given in the route prefix by its name
-// 	app.Get("/:name") => ctx.Param("name")
+// 	app.Get("/:name", ..) => ctx.Param("name")
 func (c *Context) Param(name string) string {
 	return c.vars.ByName(name)
+}
+
+// Query returns the url query parameter by its name.
+// 	app.Get("/api?limit=25", ..) => ctx.Query("limit")
+func (c *Context) Query(name string) string {
+	return c.request.URL.Query().Get(name)
+}
+
+// Form returns the form parameter by its name
+func (c *Context) Form(name string) string {
+	return c.request.FormValue(name)
+}
+
+// Redirect redirects the request to the provided URL with the given status code.
+func (c *Context) Redirect(url string, code int) error {
+	if code < http.StatusMultipleChoices || code > http.StatusTemporaryRedirect {
+		return errors.New("invalid redirect code")
+	}
+	http.Redirect(c.response, c.request, url, code)
+	return nil
 }
 
 type responseLogger struct {
@@ -300,7 +321,7 @@ func (l *responseLogger) Size() int {
 }
 
 // Renderer renders any kind of template. Weavebox allows the use of different
-// Template engines if they implement the Render method
+// template engines, if they implement the Render method.
 type Renderer interface {
 	Render(w io.Writer, name string, data interface{}) error
 }

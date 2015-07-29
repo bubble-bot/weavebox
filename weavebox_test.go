@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -235,6 +236,25 @@ func TestNotFoundHandlerOverride(t *testing.T) {
 	}
 	if !strings.Contains(body, notFoundMsg) {
 		t.Errorf("expecting body: %s got %s", notFoundMsg, body)
+	}
+}
+
+func TestContextURLQuery(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/?name=anthony", nil)
+	ctx := &Context{request: req}
+	if ctx.Query("name") != "anthony" {
+		t.Errorf("expected anthony got %s", ctx.Query("name"))
+	}
+}
+
+func TestContextForm(t *testing.T) {
+	values := url.Values{}
+	values.Set("email", "john@gmail.com")
+	req, _ := http.NewRequest("POST", "/", strings.NewReader(values.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	ctx := &Context{request: req}
+	if ctx.Form("email") != "john@gmail.com" {
+		t.Errorf("expected john@gmail.com got %s", ctx.Form("email"))
 	}
 }
 
