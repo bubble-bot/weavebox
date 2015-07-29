@@ -250,8 +250,8 @@ func (c *Context) Text(code int, text string) error {
 	return nil
 }
 
-// DecodeJSON is a helper that decodes the request Body to v
-// More in depth use for decoding and encoding JSON use the std JSON package
+// DecodeJSON is a helper that decodes the request Body to v.
+// For a more in depth use of decoding and encoding JSON, use the std JSON package.
 func (c *Context) DecodeJSON(v interface{}) error {
 	return json.NewDecoder(c.Request().Body).Decode(v)
 }
