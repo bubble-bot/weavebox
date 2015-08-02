@@ -144,3 +144,16 @@ Context also provides a series of helper functions like responding JSON en text,
 ## View / Templates
 
 ## Logging
+
+## Server
+Weavebox HTTP server is a wrapper arround the default std HTTP server, the only differens is that it provides a gracefull shutdown and a close timeout.
+
+### Gracefull stopping a weavebox app
+Gracefull stopping a weavebox app is done by sending one of these signals to the process.
+- SIGINT
+- SIGQUIT
+- SIGTERM
+
+You can also force-quit your app by sending it `SIGKILL` signal
+
+SIGUSR2 signal is not yet implemented. Reloading a new binary by forking the main process is something that wil be implemented when the need for it is there. Feel free to give some feedback on this feature if you think it can provide a bonus to the package.

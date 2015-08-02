@@ -13,34 +13,39 @@ import (
 	"time"
 )
 
+const useClosedConn = "use of closed network connection"
+
 // Server provides a gracefull shutdown of http server.
 type server struct {
 	*http.Server
-	quit chan struct{}
-	wg   sync.WaitGroup
+	quit  chan struct{}
+	fquit chan struct{}
+	wg    sync.WaitGroup
 }
 
-// ListenAndServe accepts http requests and start a goroutine for each request
-func ListenAndServe(addr string, h http.Handler) error {
-	s := &server{
+func newServer(addr string, h http.Handler) *server {
+	return &server{
 		Server: &http.Server{
 			Addr:         addr,
 			Handler:      h,
 			ReadTimeout:  5 * time.Second,
 			WriteTimeout: 10 * time.Second,
 		},
-		quit: make(chan struct{}, 1),
+		quit:  make(chan struct{}, 1),
+		fquit: make(chan struct{}, 1),
 	}
+}
+
+// ListenAndServe accepts http requests and start a goroutine for each request
+func ListenAndServe(addr string, h http.Handler) error {
+	s := newServer(addr, h)
 	return s.listen()
 }
 
 // ListenAndServeTLS accepts http TLS encrypted requests and starts a goroutine
 // for each request
 func ListenAndServeTLS(addr string, h http.Handler, cert, key string) error {
-	s := &server{
-		Server: &http.Server{Addr: addr, Handler: h},
-		quit:   make(chan struct{}, 1),
-	}
+	s := newServer(addr, h)
 	return s.listenTLS(cert, key)
 }
 
@@ -72,7 +77,7 @@ func (s *server) listenTLS(cert, key string) error {
 	return s.serve(tlsList)
 }
 
-// Serve hooks in the Server.ConnState to incr and decr the waitgroup based on
+// serve hooks in the Server.ConnState to incr and decr the waitgroup based on
 // the connection state.
 func (s *server) serve(l net.Listener) error {
 	s.Server.ConnState = func(conn net.Conn, state http.ConnState) {
@@ -101,11 +106,11 @@ func (s *server) serve(l net.Listener) error {
 			s.SetKeepAlivesEnabled(false)
 			s.wg.Wait()
 			return errors.New("server stopped gracefully")
+		case <-s.fquit:
+			return errors.New("server stopped: process killed")
 		}
 	}
 }
-
-const useClosedConn = "use of closed network connection"
 
 func (s *server) closeNotify(l net.Listener) {
 	sig := make(chan os.Signal, 1)
@@ -125,7 +130,7 @@ func (s *server) closeNotify(l net.Listener) {
 		s.quit <- struct{}{}
 	case syscall.SIGKILL:
 		l.Close()
-		s.quit <- struct{}{}
+		s.fquit <- struct{}{}
 	case syscall.SIGUSR2:
 		panic("USR2 => not implemented")
 	}

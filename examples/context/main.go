@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -31,7 +32,7 @@ func main() {
 	admin.Get("/:name", adminGreetingHandler)
 	admin.Use(authenticate)
 
-	app.Serve(*listen)
+	log.Fatal(app.Serve(*listen))
 }
 
 type datastore struct {
