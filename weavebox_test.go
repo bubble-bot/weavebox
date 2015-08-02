@@ -258,6 +258,15 @@ func TestContextForm(t *testing.T) {
 	}
 }
 
+func TestContextHeader(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Add("x-test", "test")
+	ctx := &Context{request: req}
+	if ctx.Header("x-test") != "test" {
+		t.Error("expected header to be (test) got %s", ctx.Header("x-test"))
+	}
+}
+
 func isHTTPStatusOK(t *testing.T, code int) {
 	if code != http.StatusOK {
 		t.Errorf("Expecting status 200 got %d", code)

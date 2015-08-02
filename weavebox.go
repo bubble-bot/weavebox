@@ -279,6 +279,11 @@ func (c *Context) Form(name string) string {
 	return c.request.FormValue(name)
 }
 
+// Header returns the request header by name
+func (c *Context) Header(name string) string {
+	return c.request.Header.Get(name)
+}
+
 // Redirect redirects the request to the provided URL with the given status code.
 func (c *Context) Redirect(url string, code int) error {
 	if code < http.StatusMultipleChoices || code > http.StatusTemporaryRedirect {
