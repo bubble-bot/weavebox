@@ -100,11 +100,47 @@ Handle all errors returned by adding a custom errorHandler for our application.
     }
 
 ## Context
+Context is a request based object helping you with a series of functions performed against the current request scope.
+
+### Passing values arround middleware
+Context provides a context.Context for passing request scoped values arround middleware functions.
+
+Create a new context and pass some values
+
+    func someMiddleware(ctx *weavebox.Context) error {
+        ctx.Context = context.WithValue(ctx.Context, "foo", "bar")
+        return someMiddleware2(ctx)
+    }
+
+Get the value back from the context in another middleware function
+
+    func someMiddleware2(ctx *weavebox.Context) error {
+        value := ctx.Context.Value("foo").(string)
+        ..
+    }
+
+### Helper functions
+Context also provides a series of helper functions like responding JSON en text, JSON decoding etc..
+    
+    func createUser(ctx *weavebox.Context) error {
+        user := model.User{}
+        if err := ctx.DecodeJSON(&user); err != nil {
+            return errors.New("failed to decode the response body")
+        }
+        ..
+        return ctx.JSON(http.StatusCreated, user)
+    }
+
+    func login(ctx *weavebox.Context) error {
+        token := ctx.Header("x-hmac-token")
+        if token == "" {
+            ctx.Redirect("/login", http.StatusMovedPermanently)
+            return nil
+        }
+        ..
+    }
+
 
 ## View / Templates
 
 ## Logging
-
-## Helpers
-
-
