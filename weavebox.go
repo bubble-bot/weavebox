@@ -24,6 +24,7 @@ var defaultErrorHandler = func(ctx *Context, err error) {
 	http.Error(ctx.Response(), err.Error(), http.StatusInternalServerError)
 }
 
+// Weavebox
 type Weavebox struct {
 	// ErrorHandler is invoked whenever a Handler returns an error
 	ErrorHandler ErrorHandlerFunc
