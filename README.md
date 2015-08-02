@@ -74,7 +74,7 @@ Weavebox only accepts handlers of type `weavebox.Handler` to be passed as functi
     }
 
 ### Returning errors
-Each handler requires a return of an error. This is personal idiom but it brings some benifits for handling your errors inside request handlers.
+Each handler requires an error to be returned. This is personal idiom but it brings some benifits for handling your errors inside request handlers.
     
     func someHandler(ctx *weavebox.Context) error {
         // simple error handling by returning all errors 
@@ -102,7 +102,7 @@ Handle all errors returned by adding a custom errorHandler for our application.
 ## Context
 Context is a request based object helping you with a series of functions performed against the current request scope.
 
-### Passing values arround middleware
+### Passing values arround middleware functions
 Context provides a context.Context for passing request scoped values arround middleware functions.
 
 Create a new context and pass some values
