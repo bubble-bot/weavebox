@@ -146,7 +146,12 @@ Context also provides a series of helper functions like responding JSON en text,
 ## Logging
 
 ## Server
-Weavebox HTTP server is a wrapper arround the default std HTTP server, the only differens is that it provides a gracefull shutdown and a close timeout.
+Weavebox HTTP server is a wrapper arround the default std HTTP server, the only difference is that it provides a gracefull shutdown. Weavebox provides both HTTP and HTTPS (TLS).
+    
+    app := weavebox.New()
+    app.ServeTLS(8080, cert, key)
+    // or 
+    app.Serve(8080)
 
 ### Gracefull stopping a weavebox app
 Gracefull stopping a weavebox app is done by sending one of these signals to the process.
