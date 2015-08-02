@@ -4,13 +4,7 @@ import "github.com/twanies/weavebox"
 
 func main() {
 	app := weavebox.New()
-
-	t := weavebox.NewTemplateEngine("pages")
-	// Set single templates
-	t.SetTemplates("index.html")
-	// Set templates that have a layout
-	t.SetTemplatesWithLayout("layout.html", "user/index.html")
-	t.Init()
+	t := initTemplates()
 	app.SetTemplateEngine(t)
 
 	app.Get("/", renderIndex)
@@ -25,4 +19,16 @@ func renderIndex(ctx *weavebox.Context) error {
 func renderUserDetail(ctx *weavebox.Context) error {
 	username := "anthony"
 	return ctx.Render("user/index.html", username)
+}
+
+func initTemplates() *weavebox.TemplateEngine {
+	t := weavebox.NewTemplateEngine("pages")
+
+	// Set single templates
+	t.SetTemplates("index.html")
+
+	// Set templates that have a layout
+	t.SetTemplatesWithLayout("layout.html", "user/index.html")
+	t.Init()
+	return t
 }
