@@ -119,6 +119,9 @@ Get the value back from the context in another middleware function
         ..
     }
 
+### Binding a context
+...
+
 ### Helper functions
 Context also provides a series of helper functions like responding JSON en text, JSON decoding etc..
     

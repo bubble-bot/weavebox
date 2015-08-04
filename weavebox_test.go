@@ -91,6 +91,45 @@ func TestContext(t *testing.T) {
 	}
 }
 
+func TestContextWithSubrouter(t *testing.T) {
+	w := New()
+	sub := w.Subrouter("/test")
+	sub.Get("/", checkContext(t, "a", "b"))
+	sub.Use(func(ctx *Context) error {
+		ctx.Context = context.WithValue(ctx.Context, "a", "b")
+		return nil
+	})
+	code, _ := doRequest(t, "GET", "/test", nil, w)
+	if code != http.StatusOK {
+		t.Errorf("expected status code 200 got %d", code)
+	}
+}
+
+func TestBindContext(t *testing.T) {
+	w := New()
+	w.BindContext(context.WithValue(context.Background(), "a", "b"))
+
+	w.Get("/", checkContext(t, "a", "b"))
+
+	sub := w.Subrouter("/foo")
+	sub.Get("/", checkContext(t, "a", "b"))
+
+	code, _ := doRequest(t, "GET", "/", nil, w)
+	isHTTPStatusOK(t, code)
+	code, _ = doRequest(t, "GET", "/foo", nil, w)
+	isHTTPStatusOK(t, code)
+}
+
+func TestBindContextSubrouter(t *testing.T) {
+	w := New()
+	sub := w.Subrouter("/foo")
+	sub.Get("/", checkContext(t, "foo", "bar"))
+	sub.BindContext(context.WithValue(context.Background(), "foo", "bar"))
+
+	code, _ := doRequest(t, "GET", "/foo", nil, w)
+	isHTTPStatusOK(t, code)
+}
+
 func checkContext(t *testing.T, key, expect string) Handler {
 	return func(ctx *Context) error {
 		value := ctx.Context.Value(key).(string)
