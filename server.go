@@ -66,6 +66,9 @@ func (s *server) listen() error {
 func (s *server) listenTLS(cert, key string) error {
 	var err error
 	config := &tls.Config{}
+	if s.TLSConfig != nil {
+		*config = *s.TLSConfig
+	}
 	if config.NextProtos == nil {
 		config.NextProtos = []string{"http/1.1"}
 	}
@@ -79,7 +82,7 @@ func (s *server) listenTLS(cert, key string) error {
 	if err != nil {
 		return err
 	}
-	tlsList := tls.NewListener(l, config)
+	tlsList := tls.NewListener(l.(*net.TCPListener), config)
 	return s.serve(tlsList)
 }
 
