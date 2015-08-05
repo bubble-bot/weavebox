@@ -39,6 +39,10 @@ type Weavebox struct {
 	// EnableLog lets you turn of the default access-log
 	EnableLog bool
 
+	// HTTP2 enables the HTTP2 protocol on the server. HTTP2 wil be default proto
+	// the future. Currently no browser supports HTTP/2 unencrypted.
+	HTTP2 bool
+
 	templateEngine Renderer
 	router         *httprouter.Router
 	middleware     []Handler
@@ -61,10 +65,11 @@ func (w *Weavebox) Serve(port int) error {
 	w.init()
 	portStr := fmt.Sprintf(":%d", port)
 	fmt.Fprintf(w.Output, "app listening on 0.0.0.0:%d\n", port)
-	return ListenAndServe(portStr, w)
+	return ListenAndServe(portStr, w, w.HTTP2)
 }
 
 // ServeTLS servers the application one the given port with TLS encription.
+// ServeTLS uses the HTTP2 protocol by default
 func (w *Weavebox) ServeTLS(port int, certFile, keyFile string) error {
 	w.init()
 	portStr := fmt.Sprintf(":%d", port)

@@ -11,6 +11,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/bradfitz/http2"
 )
 
 const useClosedConn = "use of closed network connection"
@@ -23,29 +25,33 @@ type server struct {
 	wg    sync.WaitGroup
 }
 
-func newServer(addr string, h http.Handler) *server {
+func newServer(addr string, h http.Handler, HTTP2 bool) *server {
+	srv := &http.Server{
+		Addr:         addr,
+		Handler:      h,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+	if HTTP2 {
+		http2.ConfigureServer(srv, &http2.Server{})
+	}
 	return &server{
-		Server: &http.Server{
-			Addr:         addr,
-			Handler:      h,
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 10 * time.Second,
-		},
-		quit:  make(chan struct{}, 1),
-		fquit: make(chan struct{}, 1),
+		Server: srv,
+		quit:   make(chan struct{}, 1),
+		fquit:  make(chan struct{}, 1),
 	}
 }
 
 // ListenAndServe accepts http requests and start a goroutine for each request
-func ListenAndServe(addr string, h http.Handler) error {
-	s := newServer(addr, h)
+func ListenAndServe(addr string, h http.Handler, HTTP2 bool) error {
+	s := newServer(addr, h, HTTP2)
 	return s.listen()
 }
 
 // ListenAndServeTLS accepts http TLS encrypted requests and starts a goroutine
 // for each request
 func ListenAndServeTLS(addr string, h http.Handler, cert, key string) error {
-	s := newServer(addr, h)
+	s := newServer(addr, h, true)
 	return s.listenTLS(cert, key)
 }
 
