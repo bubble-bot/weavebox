@@ -74,7 +74,7 @@ func (w *Weavebox) ServeCustom(s *http.Server) error {
 	return w.serve(s)
 }
 
-// ServeCustomTLS serves the application with TLS enctription and custom server configuration.
+// ServeCustomTLS serves the application with TLS encription and custom server configuration.
 func (w *Weavebox) ServeCustomTLS(s *http.Server, certFile, keyFile string) error {
 	return w.serve(s, certFile, keyFile)
 }
