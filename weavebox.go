@@ -62,7 +62,7 @@ func (w *Weavebox) Serve(port int) error {
 	return w.serve(srv)
 }
 
-// ServeTLS servers the application one the given port with TLS encription.
+// ServeTLS serves the application one the given port with TLS encription.
 // ServeTLS uses the HTTP2 protocol by default
 func (w *Weavebox) ServeTLS(port int, certFile, keyFile string) error {
 	srv := newServer(fmt.Sprintf(":%d", port), w, true)
