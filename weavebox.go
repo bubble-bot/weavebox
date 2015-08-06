@@ -123,7 +123,7 @@ func (w *Weavebox) Use(handlers ...Handler) {
 	}
 }
 
-// Subrouter returns a new Box that will inherit all of its parents middleware.
+// Box returns a new Box that will inherit all of its parents middleware.
 // you can reset the middleware registered to the box by calling Reset()
 func (w *Weavebox) Box(prefix string) *Box {
 	b := &Box{*w}
