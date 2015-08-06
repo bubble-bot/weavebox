@@ -15,7 +15,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// weavebox is opinion based minimalistic web framework for making fast and
+// Package weavebox is opinion based minimalistic web framework for making fast and
 // powerfull web application in the Go programming language. It is backed by
 // the fastest and most optimized request router available. Weavebox also
 // provides a gracefull webserver that can serve TLS encripted requests aswell.
@@ -28,10 +28,6 @@ var defaultErrorHandler = func(ctx *Context, err error) {
 type Weavebox struct {
 	// ErrorHandler is invoked whenever a Handler returns an error
 	ErrorHandler ErrorHandlerFunc
-
-	// NotFoundHandler is invoked whenever the router could not match a route
-	// against the request url
-	NotFoundHandler http.Handler
 
 	// Output writes the access-log and debug parameters
 	Output io.Writer
@@ -62,19 +58,42 @@ func New() *Weavebox {
 
 // Serve serves the application on the given port
 func (w *Weavebox) Serve(port int) error {
-	w.init()
-	portStr := fmt.Sprintf(":%d", port)
-	fmt.Fprintf(w.Output, "app listening on 0.0.0.0:%d\n", port)
-	return ListenAndServe(portStr, w, w.HTTP2)
+	srv := newServer(fmt.Sprintf(":%d", port), w, w.HTTP2)
+	return w.serve(srv)
 }
 
 // ServeTLS servers the application one the given port with TLS encription.
 // ServeTLS uses the HTTP2 protocol by default
 func (w *Weavebox) ServeTLS(port int, certFile, keyFile string) error {
-	w.init()
-	portStr := fmt.Sprintf(":%d", port)
-	fmt.Fprintf(w.Output, "app listening TLS on 0.0.0.0:%d\n", port)
-	return ListenAndServeTLS(portStr, w, certFile, keyFile)
+	srv := newServer(fmt.Sprintf(":%d", port), w, true)
+	return w.serve(srv, certFile, keyFile)
+}
+
+// ServeCustom serves the application with custom server configuration.
+func (w *Weavebox) ServeCustom(s *http.Server) error {
+	return w.serve(s)
+}
+
+// ServeCustomTLS serves the application with TLS enctription and custom server configuration.
+func (w *Weavebox) ServeCustomTLS(s *http.Server, certFile, keyFile string) error {
+	return w.serve(s, certFile, keyFile)
+}
+
+func (w *Weavebox) serve(s *http.Server, files ...string) error {
+	srv := &server{
+		Server: s,
+		quit:   make(chan struct{}, 1),
+		fquit:  make(chan struct{}, 1),
+	}
+	if len(files) == 0 {
+		fmt.Fprintf(w.Output, "app listening on 0.0.0.0:%s\n", s.Addr)
+		return srv.ListenAndServe()
+	}
+	if len(files) == 2 {
+		fmt.Fprintf(w.Output, "app listening TLS on 0.0.0.0:%s\n", s.Addr)
+		return srv.ListenAndServeTLS(files[0], files[1])
+	}
+	return errors.New("invalid server configuration")
 }
 
 // Get registers a route prefix and will invoke the Handler when the route
@@ -148,7 +167,13 @@ func (w *Weavebox) SetTemplateEngine(t Renderer) {
 	w.templateEngine = t
 }
 
-// ServeHTTP
+// SetNotFoundHandler sets a custom notFoundHandler that is invoked whenever the
+// router could not match a route against the request url.
+func (w *Weavebox) SetNotFoundHandler(h http.Handler) {
+	w.router.NotFound = h
+}
+
+// ServeHTTP satisfies the http.Handler interface
 func (w *Weavebox) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if w.EnableLog {
 		start := time.Now()
@@ -158,12 +183,6 @@ func (w *Weavebox) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		// saves an allocation by seperating the whole logger if log is disabled
 	} else {
 		w.router.ServeHTTP(rw, r)
-	}
-}
-
-func (w *Weavebox) init() {
-	if w.NotFoundHandler != nil {
-		w.router.NotFound = w.NotFoundHandler
 	}
 }
 

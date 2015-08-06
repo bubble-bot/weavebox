@@ -260,15 +260,12 @@ func TestNotFoundHandler(t *testing.T) {
 func TestNotFoundHandlerOverride(t *testing.T) {
 	w := New()
 	notFoundMsg := "hey! not found"
-	w.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(notFoundMsg))
 	})
+	w.SetNotFoundHandler(h)
 
-	// init is called before serve or serveTLS to initialize some data that
-	// needs to be passed to the underlaying router. For this test to pass
-	// we need to call init to override the default NotFoundHandler
-	w.init()
 	code, body := doRequest(t, "GET", "/", nil, w)
 	if code != http.StatusNotFound {
 		t.Errorf("expecting code 404 got %d", code)

@@ -25,7 +25,7 @@ type server struct {
 	wg    sync.WaitGroup
 }
 
-func newServer(addr string, h http.Handler, HTTP2 bool) *server {
+func newServer(addr string, h http.Handler, HTTP2 bool) *http.Server {
 	srv := &http.Server{
 		Addr:         addr,
 		Handler:      h,
@@ -35,27 +35,10 @@ func newServer(addr string, h http.Handler, HTTP2 bool) *server {
 	if HTTP2 {
 		http2.ConfigureServer(srv, &http2.Server{})
 	}
-	return &server{
-		Server: srv,
-		quit:   make(chan struct{}, 1),
-		fquit:  make(chan struct{}, 1),
-	}
+	return srv
 }
 
-// ListenAndServe accepts http requests and start a goroutine for each request
-func ListenAndServe(addr string, h http.Handler, HTTP2 bool) error {
-	s := newServer(addr, h, HTTP2)
-	return s.listen()
-}
-
-// ListenAndServeTLS accepts http TLS encrypted requests and starts a goroutine
-// for each request
-func ListenAndServeTLS(addr string, h http.Handler, cert, key string) error {
-	s := newServer(addr, h, true)
-	return s.listenTLS(cert, key)
-}
-
-func (s *server) listen() error {
+func (s *server) ListenAndServe() error {
 	l, err := net.Listen("tcp", s.Addr)
 	if err != nil {
 		return err
@@ -63,7 +46,7 @@ func (s *server) listen() error {
 	return s.serve(l)
 }
 
-func (s *server) listenTLS(cert, key string) error {
+func (s *server) ListenAndServeTLS(cert, key string) error {
 	var err error
 	config := &tls.Config{}
 	if s.TLSConfig != nil {
