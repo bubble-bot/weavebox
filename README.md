@@ -23,7 +23,7 @@ Minimalistic web framework for the Go programming language.
         app.Post("/bar", barHandler)
         app.Use(middleware1, middleware2)
 
-        friends := app.Subrouter("/friends")
+        friends := app.Box("/friends")
         friends.Get("/profile", profileHandler)
         friends.Use(middleware3, middleware4)
         
@@ -52,6 +52,30 @@ get named url parameters
     app.Get("/hello/:name", func(ctx *weavebox.Context) error {
         name := ctx.Param("name")
     })
+
+## Box (subrouting)
+Box lets you manage routes, contexts and middleware separate from each other.
+
+Create a new weavebox object and attach some middleware and context to it.
+
+    app := weavebox.New()
+    app.BindContext(context.WithValue(context.Background(), "foo", "bar")
+    app.Get("/", somHandler)
+    app.Use(middleware1, middleware2)
+
+Create a box and attach its own middleware and context to it
+    
+    friends := app.Box("/friends")
+    app.BindContext(context.WithValue(context.Background(), "friend1", "john")
+    friends.Post("/create", someHandler)
+    friends.Use(middleware3, middleware4)
+
+In this case box friends will inherit middleware1 and middleware2 from its parent app. We can reset the middleware from its parent by calling `Reset()`
+    
+    friends := app.Box("/friends").Reset()
+    friends.Use(middleware3, middleware4)
+
+Now box friends will have only middleware3 and middleware4 attached.
 
 ## Static files
 Make our assets are accessable trough /assets/styles.css
@@ -120,7 +144,14 @@ Get the value back from the context in another middleware function
     }
 
 ### Binding a context
-...
+In some cases you want to intitialize a context from the the main function, like a datastore for example. You can set a context out of a request scope by calling `BindContext()`.
+    
+    app.BindContext(context.WithValue(context.Background(), "foo", "bar"))
+
+As mentioned in the Box section, you can add different contexts to different boxes.
+    
+    mybox := app.Box("/foo", ..)
+    mybox.BindContext(..)
 
 ### Helper functions
 Context also provides a series of helper functions like responding JSON en text, JSON decoding etc..

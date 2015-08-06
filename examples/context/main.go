@@ -28,7 +28,7 @@ func main() {
 	app.Use(dbContextHandler)
 
 	// make a subrouter and register some middleware for it
-	admin := app.Subrouter("/admin")
+	admin := app.Box("/admin")
 	admin.Get("/:name", adminGreetingHandler)
 	admin.Use(authenticate)
 

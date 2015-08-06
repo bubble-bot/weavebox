@@ -40,7 +40,7 @@ type Weavebox struct {
 	EnableLog bool
 
 	// HTTP2 enables the HTTP2 protocol on the server. HTTP2 wil be default proto
-	// the future. Currently no browser supports HTTP/2 unencrypted.
+	// in the future. Currently browsers only supports HTTP/2 over encrypted TLS.
 	HTTP2 bool
 
 	templateEngine Renderer
@@ -125,7 +125,7 @@ func (w *Weavebox) Use(handlers ...Handler) {
 
 // Subrouter returns a new Box that will inherit all of its parents middleware.
 // you can reset the middleware registered to the box by calling Reset()
-func (w *Weavebox) Subrouter(prefix string) *Box {
+func (w *Weavebox) Box(prefix string) *Box {
 	b := &Box{*w}
 	b.Weavebox.prefix += prefix
 	return b

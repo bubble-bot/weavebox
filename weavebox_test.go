@@ -43,9 +43,9 @@ func TestMethodDelete(t *testing.T) {
 	isHTTPStatusOK(t, code)
 }
 
-func TestSubrouter(t *testing.T) {
+func TestBox(t *testing.T) {
 	w := New()
-	sr := w.Subrouter("/foo")
+	sr := w.Box("/foo")
 	sr.Get("/bar", noopHandler)
 	code, _ := doRequest(t, "GET", "/foo/bar", nil, w)
 	isHTTPStatusOK(t, code)
@@ -93,7 +93,7 @@ func TestContext(t *testing.T) {
 
 func TestContextWithSubrouter(t *testing.T) {
 	w := New()
-	sub := w.Subrouter("/test")
+	sub := w.Box("/test")
 	sub.Get("/", checkContext(t, "a", "b"))
 	sub.Use(func(ctx *Context) error {
 		ctx.Context = context.WithValue(ctx.Context, "a", "b")
@@ -111,7 +111,7 @@ func TestBindContext(t *testing.T) {
 
 	w.Get("/", checkContext(t, "a", "b"))
 
-	sub := w.Subrouter("/foo")
+	sub := w.Box("/foo")
 	sub.Get("/", checkContext(t, "a", "b"))
 
 	code, _ := doRequest(t, "GET", "/", nil, w)
@@ -122,7 +122,7 @@ func TestBindContext(t *testing.T) {
 
 func TestBindContextSubrouter(t *testing.T) {
 	w := New()
-	sub := w.Subrouter("/foo")
+	sub := w.Box("/foo")
 	sub.Get("/", checkContext(t, "foo", "bar"))
 	sub.BindContext(context.WithValue(context.Background(), "foo", "bar"))
 
@@ -178,7 +178,7 @@ func TestBoxMiddlewareReset(t *testing.T) {
 		buf.WriteString("b")
 		return nil
 	})
-	sub := w.Subrouter("/sub").Reset()
+	sub := w.Box("/sub").Reset()
 	sub.Get("/", noopHandler)
 	code, _ := doRequest(t, "GET", "/sub", nil, w)
 	isHTTPStatusOK(t, code)
@@ -198,7 +198,7 @@ func TestBoxMiddlewareInheritsParent(t *testing.T) {
 		buf.WriteString("b")
 		return nil
 	})
-	sub := w.Subrouter("/sub")
+	sub := w.Box("/sub")
 	sub.Get("/", noopHandler)
 	code, _ := doRequest(t, "GET", "/sub", nil, w)
 	isHTTPStatusOK(t, code)

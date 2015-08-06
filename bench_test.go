@@ -19,10 +19,10 @@ func BenchmarkGetWithValues(b *testing.B) {
 	}
 }
 
-func BenchmarkSubrouterGetWithValues(b *testing.B) {
+func BenchmarkBoxGetWithValues(b *testing.B) {
 	app := New()
 	app.EnableLog = false
-	admin := app.Subrouter("/admin")
+	admin := app.Box("/admin")
 	admin.Get("/:name", func(ctx *Context) error { return nil })
 
 	for i := 0; i < b.N; i++ {
