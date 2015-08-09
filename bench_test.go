@@ -7,7 +7,6 @@ import (
 
 func BenchmarkGetWithValues(b *testing.B) {
 	app := New()
-	app.EnableLog = false
 	app.Get("/hello/:name", func(ctx *Context) error { return nil })
 
 	for i := 0; i < b.N; i++ {
@@ -21,7 +20,6 @@ func BenchmarkGetWithValues(b *testing.B) {
 
 func BenchmarkBoxGetWithValues(b *testing.B) {
 	app := New()
-	app.EnableLog = false
 	admin := app.Box("/admin")
 	admin.Get("/:name", func(ctx *Context) error { return nil })
 

@@ -32,8 +32,8 @@ type Weavebox struct {
 	// Output writes the access-log and debug parameters
 	Output io.Writer
 
-	// EnableLog lets you turn of the default access-log
-	EnableLog bool
+	// EnableAccessLog lets you turn of the default access-log
+	EnableAccessLog bool
 
 	// HTTP2 enables the HTTP2 protocol on the server. HTTP2 wil be default proto
 	// in the future. Currently browsers only supports HTTP/2 over encrypted TLS.
@@ -49,10 +49,10 @@ type Weavebox struct {
 // New returns a new Weavebox object
 func New() *Weavebox {
 	return &Weavebox{
-		router:       httprouter.New(),
-		Output:       os.Stderr,
-		ErrorHandler: defaultErrorHandler,
-		EnableLog:    true,
+		router:          httprouter.New(),
+		Output:          os.Stderr,
+		ErrorHandler:    defaultErrorHandler,
+		EnableAccessLog: false,
 	}
 }
 
@@ -174,7 +174,7 @@ func (w *Weavebox) SetNotFoundHandler(h http.Handler) {
 
 // ServeHTTP satisfies the http.Handler interface
 func (w *Weavebox) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	if w.EnableLog {
+	if w.EnableAccessLog {
 		start := time.Now()
 		logger := &responseLogger{w: rw}
 		w.router.ServeHTTP(logger, r)
