@@ -174,6 +174,7 @@ func (w *Weavebox) SetNotFoundHandler(h http.Handler) {
 
 // ServeHTTP satisfies the http.Handler interface
 func (w *Weavebox) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Server", "weavebox/1.0")
 	if w.EnableAccessLog {
 		start := time.Now()
 		logger := &responseLogger{w: rw}
