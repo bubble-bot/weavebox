@@ -119,9 +119,10 @@ A weavebox ErrorHandlerFunc
 Handle all errors returned by adding a custom errorHandler for our application.
 
     app := weavebox.New()
-    app.ErrorHandler = func(ctx *weavebox.Context, err error) {
+    errHandler := func(ctx *weavebox.Context, err error) {
         .. handle the error ..
     }
+    app.SetErrorHandler(errHandler)
 
 ## Context
 Context is a request based object helping you with a series of functions performed against the current request scope.

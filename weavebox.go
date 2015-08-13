@@ -166,9 +166,9 @@ func (w *Weavebox) SetTemplateEngine(t Renderer) {
 	w.templateEngine = t
 }
 
-// SetNotFoundHandler sets a custom notFoundHandler that is invoked whenever the
+// SetNotFound sets a custom handler that is invoked whenever the
 // router could not match a route against the request url.
-func (w *Weavebox) SetNotFoundHandler(h http.Handler) {
+func (w *Weavebox) SetNotFound(h http.Handler) {
 	w.router.NotFound = h
 }
 
@@ -176,6 +176,12 @@ func (w *Weavebox) SetNotFoundHandler(h http.Handler) {
 // could not match the method against the predefined routes.
 func (w *Weavebox) SetMethodNotAllowed(h http.Handler) {
 	w.router.MethodNotAllowed = h
+}
+
+// SetErrorHandler sets a centralized errorHandler that is invoked whenever
+// a Handler returns an error.
+func (w *Weavebox) SetErrorHandler(h ErrorHandlerFunc) {
+	w.ErrorHandler = h
 }
 
 // ServeHTTP satisfies the http.Handler interface

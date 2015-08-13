@@ -210,12 +210,12 @@ func TestBoxMiddlewareInheritsParent(t *testing.T) {
 func TestErrorHandler(t *testing.T) {
 	w := New()
 	errorMsg := "oops! something went wrong"
-	w.ErrorHandler = func(ctx *Context, err error) {
+	w.SetErrorHandler(func(ctx *Context, err error) {
 		ctx.Response().WriteHeader(http.StatusInternalServerError)
 		if err.Error() != errorMsg {
 			t.Error("expecting %s, got %s", errorMsg, err.Error())
 		}
-	}
+	})
 	w.Use(func(ctx *Context) error {
 		return errors.New(errorMsg)
 	})
@@ -257,14 +257,14 @@ func TestNotFoundHandler(t *testing.T) {
 	}
 }
 
-func TestNotFoundHandlerOverride(t *testing.T) {
+func TestSetNotFound(t *testing.T) {
 	w := New()
 	notFoundMsg := "hey! not found"
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(notFoundMsg))
 	})
-	w.SetNotFoundHandler(h)
+	w.SetNotFound(h)
 
 	code, body := doRequest(t, "GET", "/", nil, w)
 	if code != http.StatusNotFound {
@@ -272,6 +272,36 @@ func TestNotFoundHandlerOverride(t *testing.T) {
 	}
 	if !strings.Contains(body, notFoundMsg) {
 		t.Errorf("expecting body: %s got %s", notFoundMsg, body)
+	}
+}
+
+func TestMethodNotAllowed(t *testing.T) {
+	w := New()
+	w.Get("/", noopHandler)
+	code, body := doRequest(t, "POST", "/", nil, w)
+	if code != http.StatusMethodNotAllowed {
+		t.Errorf("expecting code 405 got %d", code)
+	}
+	if !strings.Contains(body, "Method Not Allowed") {
+		t.Errorf("expecting body: Method Not Allowed got %s", body)
+	}
+}
+
+func TestSetMethodNotAllowed(t *testing.T) {
+	w := New()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("foo"))
+	})
+	w.SetMethodNotAllowed(handler)
+	w.Get("/", noopHandler)
+
+	code, body := doRequest(t, "POST", "/", nil, w)
+	if code != http.StatusMethodNotAllowed {
+		t.Errorf("expecting code 405 got %d", code)
+	}
+	if !strings.Contains(body, "foo") {
+		t.Errorf("expecting body: foo got %s", body)
 	}
 }
 
