@@ -172,6 +172,12 @@ func (w *Weavebox) SetNotFoundHandler(h http.Handler) {
 	w.router.NotFound = h
 }
 
+// SetMethodNotAllowed sets a custom handler that is invoked whenever the router
+// could not match the method against the predefined routes.
+func (w *Weavebox) SetMethodNotAllowed(h http.Handler) {
+	w.router.MethodNotAllowed = h
+}
+
 // ServeHTTP satisfies the http.Handler interface
 func (w *Weavebox) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Server", "weavebox/1.0")
