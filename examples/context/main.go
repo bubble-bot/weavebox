@@ -22,7 +22,7 @@ func main() {
 	app := weavebox.New()
 
 	// centralizing our errors returned from middleware and request handlers
-	app.ErrorHandler = errorHandler
+	app.SetErrorHandler(errorHandler)
 
 	app.Get("/hello/:name", greetingHandler)
 	app.Use(dbContextHandler)
