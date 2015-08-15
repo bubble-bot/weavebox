@@ -236,15 +236,21 @@ func (w *Weavebox) makeHTTPRouterHandle(h Handler) httprouter.Handle {
 
 func (w *Weavebox) writeLog(r *http.Request, start time.Time, status, size int) {
 	host, _, _ := net.SplitHostPort(r.Host)
-	fmt.Fprintf(w.Output, "%s - [%s] %s %s %s %d %d %d\n",
+	username := "-"
+	if r.URL.User != nil {
+		if name := r.URL.User.Username(); name != "" {
+			username = name
+		}
+	}
+	fmt.Fprintf(w.Output, "%s - %s [%s] \"%s %s %s\" %d %d\n",
 		host,
+		username,
 		start.Format("02/Jan/2006:15:04:05 -0700"),
 		r.Method,
 		r.RequestURI,
 		r.Proto,
 		status,
 		size,
-		time.Now().Sub(start),
 	)
 }
 
