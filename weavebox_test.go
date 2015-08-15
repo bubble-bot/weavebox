@@ -15,6 +15,16 @@ import (
 
 var noopHandler = func(ctx *Context) error { return nil }
 
+func TestHandle(t *testing.T) {
+	w := New()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	for _, method := range []string{"GET", "PUT", "POST", "DELETE"} {
+		w.Handle(method, "/", handler)
+		code, _ := doRequest(t, method, "/", nil, w)
+		isHTTPStatusOK(t, code)
+	}
+}
+
 func TestMethodGet(t *testing.T) {
 	w := New()
 	w.Get("/", noopHandler)

@@ -95,6 +95,12 @@ func (w *Weavebox) serve(s *http.Server, files ...string) error {
 	return errors.New("invalid server configuration")
 }
 
+// Handle adapts the usage of an http.Handler and will be invoked when
+// the router matches the prefix and request method
+func (w *Weavebox) Handle(method, path string, h http.Handler) {
+	w.router.Handler(method, path, h)
+}
+
 // Get registers a route prefix and will invoke the Handler when the route
 // matches the prefix and the request METHOD is GET
 func (w *Weavebox) Get(route string, h Handler) {
