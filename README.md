@@ -179,6 +179,12 @@ Context also provides a series of helper functions like responding JSON en text,
 ## View / Templates
 
 ## Logging
+### Access Log
+Weavebox provides an access-log in an Apache log format for each incomming request. The access-log is disabled by default, to enable the access-log set `app.EnableAccessLog = true`.
+
+`127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326`
+
+### Logging errors and information
 
 ## Server
 Weavebox HTTP server is a wrapper arround the default std HTTP server, the only difference is that it provides a gracefull shutdown. Weavebox provides both HTTP and HTTPS (TLS).
