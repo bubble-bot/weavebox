@@ -53,6 +53,20 @@ func TestMethodDelete(t *testing.T) {
 	isHTTPStatusOK(t, code)
 }
 
+func TestMethodHead(t *testing.T) {
+	w := New()
+	w.Head("/", noopHandler)
+	code, _ := doRequest(t, "HEAD", "/", nil, w)
+	isHTTPStatusOK(t, code)
+}
+
+func TestMethodOptions(t *testing.T) {
+	w := New()
+	w.Options("/", noopHandler)
+	code, _ := doRequest(t, "OPTIONS", "/", nil, w)
+	isHTTPStatusOK(t, code)
+}
+
 func TestBox(t *testing.T) {
 	w := New()
 	sr := w.Box("/foo")

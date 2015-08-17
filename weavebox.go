@@ -125,6 +125,18 @@ func (w *Weavebox) Delete(route string, h Handler) {
 	w.add("DELETE", route, h)
 }
 
+// Head registers a route prefix and will invoke the Handler when the route
+// matches the prefix and the request METHOD is HEAD
+func (w *Weavebox) Head(route string, h Handler) {
+	w.add("HEAD", route, h)
+}
+
+// Options registers a route prefix and will invoke the Handler when the route
+// matches the prefix and the request METHOD is OPTIONS
+func (w *Weavebox) Options(route string, h Handler) {
+	w.add("OPTIONS", route, h)
+}
+
 // Static registers the prefix to the router and start to act as a fileserver
 // 	app.Static("/public", "./assets")
 func (w *Weavebox) Static(prefix, dir string) {
@@ -192,7 +204,9 @@ func (w *Weavebox) SetErrorHandler(h ErrorHandlerFunc) {
 
 // ServeHTTP satisfies the http.Handler interface
 func (w *Weavebox) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Server", "weavebox/1.0")
+	if rw != nil {
+		rw.Header().Set("Server", "weavebox/1.0")
+	}
 	if w.EnableAccessLog {
 		start := time.Now()
 		logger := &responseLogger{w: rw}
